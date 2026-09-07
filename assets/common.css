@@ -107,3 +107,12 @@ body .bottom-nav .nav-btn:nth-child(2)::before{background-image:url("./skin/5CB2
 body .bottom-nav .nav-btn:nth-child(3)::before{background-image:url("./skin/9A402E72-D080-448D-B7E2-BA94C7BDCD87.png?v=20260908-fullnav1")!important}
 body .bottom-nav .nav-btn:nth-child(4)::before{background-image:url("./skin/4F81B1FA-E781-4604-B7FF-7387BB719789.png?v=20260908-fullnav1")!important}
 body .bottom-nav .nav-btn:nth-child(5)::before{background-image:url("./skin/E54BF95C-E31A-4067-B470-A61AFDBF7954.png?v=20260908-fullnav1")!important}
+
+/* Lightweight selected state: background + inset outline only. */
+body .bottom-nav .nav-btn.active{
+  background:#eef8f5!important;
+  box-shadow:inset 0 0 0 2px #7fb6be!important
+}
+body .bottom-nav .nav-btn.active::before{
+  transform:none!important
+}
