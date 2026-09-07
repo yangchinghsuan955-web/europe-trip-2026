@@ -144,7 +144,6 @@ const TICKET_APPS = [
     const stored = key => { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } };
     const save = (key, value) => { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} };
     const state = {
-      tab: stored("aurora-tab") || "days",
       day: Number(stored("aurora-day")) || 1,
       eventFilter: "全部",
       eventSearch: "",
@@ -181,13 +180,6 @@ const TICKET_APPS = [
       const online = navigator.onLine;
       $("#networkBadge").classList.toggle("offline", !online);
       $("#networkBadge span").textContent = online ? "地圖可開啟" : "離線可查看";
-    }
-
-    function showTab(tab, scroll = true) {
-      state.tab = tab; save("aurora-tab", tab);
-      $$(".tab-panel").forEach(el => el.classList.toggle("active", el.id === `tab-${tab}`));
-      $$(".nav-btn").forEach(el => el.classList.toggle("active", el.dataset.tab === tab));
-      if (scroll) window.scrollTo({ top: 230, behavior: "smooth" });
     }
 
     function renderNotices() {
@@ -388,8 +380,6 @@ const TICKET_APPS = [
     }
     function init() {
       renderCountdown(); renderNetwork(); renderNotices(); renderDayView(); renderTransport(); renderHotels(); renderTicketApps(); renderChecklist(); renderPractical(); renderBookings(); renderTax(); renderBudget(); renderFood(); renderMeals(); bindGuideImages();
-      showTab(state.tab,false);
-      $$(".nav-btn").forEach(btn=>btn.addEventListener("click",()=>showTab(btn.dataset.tab)));
       $("#jumpToday").addEventListener("click",()=>{state.day=currentTripDay();save("aurora-day",state.day);renderDayView();toast(`已切換 Day ${state.day}`);});
       $("#eventSearch").addEventListener("input",e=>{state.eventSearch=e.target.value;renderEvents();});
       $("#clearSearch").addEventListener("click",()=>{$("#eventSearch").value="";state.eventSearch="";renderEvents();});
