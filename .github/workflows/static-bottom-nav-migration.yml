@@ -28,7 +28,6 @@ jobs:
           import re
 
           VERSION = "20260908-nav1"
-          ROOT = Path('.')
 
           ICONS = {
               'days': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M8 3v4M16 3v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"></path></svg>',
@@ -61,8 +60,7 @@ jobs:
               raise AssertionError(f'Unknown navigation page: {s}')
 
           def make_nav(path: Path):
-              depth = len(path.parent.parts)
-              prefix = '../' * depth
+              prefix = '../' * len(path.parent.parts)
               active = current_key(path)
               parts = ['<nav class="bottom-nav" aria-label="主要導覽">']
               for key, target, nav_id, label in ITEMS:
@@ -83,35 +81,36 @@ jobs:
               return pattern.sub(repl, text)
 
           def strip_legacy_page_nav_scripts(text: str):
-              # Remove one-off scripts that switch the five main panels/nav buttons or intercept native links.
               script_re = re.compile(r'<script>(.*?)</script>', re.S)
               def repl(m):
                   body = m.group(1)
                   if '.bottom-nav' in body and ('window.location.href' in body or 'const wanted' in body or 'let wanted' in body):
                       return ''
-                  # Keep any other compatibility work but remove the old "add active without clearing" nav mutation.
-                  body2 = re.sub(
+                  body = re.sub(
                       r"document\.querySelector\((['\"])\.bottom-nav.*?\1\)\?\.classList\.add\((['\"])active\2\);?",
                       '', body
                   )
-                  return '<script>' + body2 + '</script>'
+                  return '<script>' + body + '</script>'
               return script_re.sub(repl, text)
 
-          html_files = [
+          candidates = [
               Path('daily/index.html'),
               Path('transport/index.html'),
               Path('stay/index.html'),
               Path('budget/index.html'),
           ] + sorted(Path('prep-tools').rglob('*.html'))
 
+          # Redirect-only compatibility files (for example prep-tools/apps.html) have no bottom nav and are intentionally left untouched.
+          html_files = [
+              path for path in candidates
+              if '<nav class="bottom-nav"' in path.read_text(encoding='utf-8')
+          ]
+
           for path in html_files:
               text = path.read_text(encoding='utf-8')
               page_key = current_key(path)
-
-              # One static current panel per split page; no main-tab JS decides it at runtime.
               text = normalize_active_panel(text, page_key)
 
-              # Replace the complete bottom navigation with real anchors and one aria-current.
               text, nav_count = re.subn(
                   r'<nav class="bottom-nav" aria-label="主要導覽">.*?</nav>',
                   make_nav(path),
@@ -123,18 +122,14 @@ jobs:
                   raise AssertionError(f'{path}: expected exactly one bottom nav, got {nav_count}')
 
               text = strip_legacy_page_nav_scripts(text)
-
-              # No selected-state class for the five main links; aria-current is the source of truth.
               text = text.replace('.nav-btn.active', '.nav-btn[aria-current="page"]')
 
-              # Shared cache version for the shared CSS / JS assets.
               text = re.sub(r'common\.css(?:\?v=[^"\']+)?', f'common.css?v={VERSION}', text)
               text = re.sub(r'common\.js(?:\?v=[^"\']+)?', f'common.js?v={VERSION}', text)
               text = re.sub(r'subpage-runtime\.js(?:\?v=[^"\']+)?', f'subpage-runtime.js?v={VERSION}', text)
-
               path.write_text(text, encoding='utf-8')
 
-          # Remove the five-main-page state machine from common.js only; other localStorage state remains intact.
+          # Remove only the five-main-page state machine. Other localStorage state remains intact.
           common_js = Path('assets/common.js')
           js = common_js.read_text(encoding='utf-8')
           js, n_tab = re.subn(r'\n\s*tab:\s*stored\("aurora-tab"\)\s*\|\|\s*"days",', '', js, count=1)
@@ -143,10 +138,7 @@ jobs:
 
           js, n_show = re.subn(
               r'\n\s*function showTab\(tab, scroll = true\) \{.*?\n\s*\}\n\n(?=\s*function renderNotices)',
-              '\n\n',
-              js,
-              count=1,
-              flags=re.S,
+              '\n\n', js, count=1, flags=re.S,
           )
           if n_show != 1:
               raise AssertionError(f'common.js: showTab function match count={n_show}')
@@ -154,20 +146,20 @@ jobs:
           js, n_init_show = re.subn(r'\n\s*showTab\(state\.tab,false\);', '', js, count=1)
           js, n_nav_listener = re.subn(
               r'\n\s*\$\$\("\.nav-btn"\)\.forEach\(btn=>btn\.addEventListener\("click",\(\)=>showTab\(btn\.dataset\.tab\)\)\);',
-              '',
-              js,
-              count=1,
+              '', js, count=1,
           )
           if n_init_show != 1 or n_nav_listener != 1:
               raise AssertionError(f'common.js: init removals show={n_init_show}, listener={n_nav_listener}')
-          if 'aurora-tab' in js or 'function showTab' in js:
+          if 'aurora-tab' in js or 'function showTab' in js or 'state.tab' in js:
               raise AssertionError('common.js: legacy main-tab state still present')
           common_js.write_text(js, encoding='utf-8')
 
-          # Shared selected state: aria-current only. Remove the old CSS text substitution for "預算".
           common_css = Path('assets/common.css')
           css = common_css.read_text(encoding='utf-8')
-          css = re.sub(r'\n\.bottom-nav \.nav-btn:last-child\{font-size:0!important\}\n\.bottom-nav \.nav-btn:last-child::after\{content:"餐食與購物";font-size:10px;line-height:1\.2;font-weight:750\}\n', '\n', css, count=1)
+          css = re.sub(
+              r'\n\.bottom-nav \.nav-btn:last-child\{font-size:0!important\}\n\.bottom-nav \.nav-btn:last-child::after\{content:"餐食與購物";font-size:10px;line-height:1\.2;font-weight:750\}\n',
+              '\n', css, count=1,
+          )
           css = css.replace('.nav-btn.active', '.nav-btn[aria-current="page"]')
           common_css.write_text(css, encoding='utf-8')
 
@@ -175,7 +167,6 @@ jobs:
           base = common_base.read_text(encoding='utf-8').replace('.nav-btn.active', '.nav-btn[aria-current="page"]')
           common_base.write_text(base, encoding='utf-8')
 
-          # Keep README as the architecture source of truth for future edits.
           readme = Path('README.md')
           rd = readme.read_text(encoding='utf-8')
           rd = rd.replace('| 行前與工具 | `prep-tools/` | 購票 App、入境、待辦、行李、退稅 |', '| 行前工具 | `prep-tools/` | 購票 App、入境、待辦、行李、退稅 |')
@@ -184,15 +175,15 @@ jobs:
           rd = rd.replace('如果只是修改預算，改 `budget/index.html`。', '如果只是修改餐食與購物，改 `budget/index.html`。')
           readme.write_text(rd, encoding='utf-8')
 
-          # Verification: exactly one selected main item on every page and no button/data-tab navigation remains.
           for path in html_files:
               text = path.read_text(encoding='utf-8')
               nav_match = re.search(r'<nav class="bottom-nav" aria-label="主要導覽">(.*?)</nav>', text, re.S)
               if not nav_match:
                   raise AssertionError(f'{path}: nav missing after patch')
               nav = nav_match.group(1)
-              if nav.count('aria-current="page"') != 1:
-                  raise AssertionError(f'{path}: aria-current count={nav.count("aria-current=\"page\"")}')
+              current_count = nav.count('aria-current="page"')
+              if current_count != 1:
+                  raise AssertionError(f'{path}: aria-current count={current_count}')
               if '<button' in nav or 'data-tab=' in nav or ' active' in nav:
                   raise AssertionError(f'{path}: legacy button/data-tab/active remains in nav')
               if '餐食與購物' not in nav or '行前工具' not in nav:
@@ -201,14 +192,19 @@ jobs:
                   raise AssertionError(f'{path}: common.css cache version not normalized')
               if 'common.js' in text and f'common.js?v={VERSION}' not in text:
                   raise AssertionError(f'{path}: common.js cache version not normalized')
+              for script_body in re.findall(r'<script>(.*?)</script>', text, re.S):
+                  if '.bottom-nav' in script_body and ('window.location.href' in script_body or 'classList.add' in script_body or 'classList.toggle' in script_body):
+                      raise AssertionError(f'{path}: legacy JS still mutates/intercepts bottom nav')
 
           css = common_css.read_text(encoding='utf-8')
           if 'last-child::after{content:"餐食與購物"' in css:
               raise AssertionError('common.css: pseudo text replacement still present')
           if '.nav-btn.active' in css or '.nav-btn.active' in common_base.read_text(encoding='utf-8'):
               raise AssertionError('CSS: active selector still controls bottom nav')
+          if '.bottom-nav .nav-btn[aria-current="page"]' not in css:
+              raise AssertionError('common.css: aria-current selected state missing')
 
-          print(f'Patched and verified {len(html_files)} HTML pages plus shared CSS/JS.')
+          print(f'Patched and verified {len(html_files)} visible HTML pages plus shared CSS/JS.')
           PY
 
       - name: Commit migration
