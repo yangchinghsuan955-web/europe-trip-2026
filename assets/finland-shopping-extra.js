@@ -356,3 +356,12 @@
     if(list&&'MutationObserver' in window)new MutationObserver(function(){syncButtons();}).observe(list,{childList:true,subtree:true});
   });
 })();
+
+/* 載入購物清單圖片分享功能；獨立檔案避免影響既有購物互動。 */
+(function(){
+  if(document.getElementById('shoppingShareImageLoader'))return;
+  var script=document.createElement('script');
+  script.id='shoppingShareImageLoader';
+  script.src='../assets/shopping-share-image.js?v=20260908-share1';
+  document.head.appendChild(script);
+})();
