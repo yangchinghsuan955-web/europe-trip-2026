@@ -61,6 +61,30 @@
     'Valio Hedelmätarha Luomu Puolukka-Karpalo':'../assets/shopping/norway/Valio Hedelmätarha Luomu Puolukka-Karpalo.avif'
   };
 
+  /* LOCAL SHOPPING ASSET OVERRIDES START */
+  var localAssetMap={
+    "Kelly's Chips Classic":"../assets/shopping/vienna/kellys-chips-classic.png",
+    "Alnatura Dinkel Mini Brezeln":"../assets/shopping/vienna/alnatura-dinkel-mini-brezeln.png",
+    "Ritter Sport Nussklasse Pistazie":"../assets/shopping/vienna/ritter-sport-pistazie.png",
+    "Lindt Dubai Style Chocolade":"../assets/shopping/vienna/lindt-dubai-style.png",
+    "Almdudler":"../assets/shopping/vienna/almdudler.png",
+    "Manner Original Neapolitaner 威化餅":"../assets/shopping/vienna/manner-original-neapolitaner.png",
+    "Darbo Rosenmarillen Konfitüre":"../assets/shopping/vienna/darbo-rosenmarillen.png",
+    "DEMEL Kandierte Veilchen 糖漬紫羅蘭":"../assets/shopping/vienna/demel-candied-violets.png",
+    "Zotter 巧克力":"../assets/shopping/vienna/zotter-chocolate.png",
+    "Clinical Melatonin Forte Original":"../assets/shopping/vienna/clinical-melatonin-forte.png",
+    "Balea Hyaluron Konzentrat（藍色補水款）":"../assets/shopping/vienna/balea-hyaluron-konzentrat.png",
+    "Ferrero Giotto 榛果威化小球":"../assets/shopping/vienna/ferrero-giotto.png",
+    "Ovomaltine Crunchy Cream":"../assets/shopping/finland/ovomaltine-crunchy-cream.png",
+    "Paulig Juhla Mokka":"../assets/shopping/finland/paulig-juhla-mokka.png",
+    "Nordqvist Moomin Tea":"../assets/shopping/finland/nordqvist-moomin-tea.png",
+    "Nordqvist SUOMI Blueberry Tea":"../assets/shopping/finland/nordqvist-suomi-blueberry-tea.png",
+    "Fazer Cacao":"../assets/shopping/finland/fazer-cacao.png",
+    "Lumene 保養品":"../assets/shopping/finland/lumene-skincare.png"
+  };
+  Object.keys(localAssetMap).forEach(function(name){imageMap[name]=localAssetMap[name];fullImageMap[name]=localAssetMap[name];});
+  /* LOCAL SHOPPING ASSET OVERRIDES END */
+
   var sourceMap={
     'Ovomaltine Crunchy Cream':{source:'https://www.ovomaltine.com/en/ovomaltine-crunchy-cream-240-g',sourceLabel:'Ovomaltine 官方商品頁'},
     'Paulig Juhla Mokka':{source:'https://www.s-kaupat.fi/tuote/paulig-juhla-mokka-kahvi-suodatinjauhatus-500g/6411300000494',sourceLabel:'S-kaupat 官方販售頁'},
