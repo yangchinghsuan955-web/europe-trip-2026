@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-Hant-TW"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#102d3e"><title>行李清單｜2026 歐洲極光之旅</title><link rel="stylesheet" href="../assets/common.css?v=20260908-nav1"><style>#luggageSegments{display:flex!important}#tab-luggage{display:block!important}#tab-luggage .subview{display:block!important}.bottom-nav .nav-btn{text-align:center!important}.packing-warning-card{margin-bottom:14px}.packing-warning-card h3{margin-bottom:10px}.packing-warning-card ul{margin:0;padding-left:1.25rem}.packing-warning-card li{margin:6px 0;line-height:1.55}.packing-warning-card strong{font-weight:800}</style></head>
+<html lang="zh-Hant-TW"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#102d3e"><title>行李清單｜2026 歐洲極光之旅</title><link rel="stylesheet" href="../assets/common.css?v=20260908-nav1"><style>#luggageSegments{display:flex!important}#tab-luggage{display:block!important}#tab-luggage .subview{display:block!important}.bottom-nav .nav-btn{text-align:center!important}.packing-warning-card{margin:0 0 14px;border:1px solid #dce7e3;border-radius:18px;background:rgba(255,253,249,.97);box-shadow:0 7px 20px rgba(42,78,88,.055);overflow:hidden}.packing-warning-card summary{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 15px;cursor:pointer;list-style:none;color:#0c4c75;font-weight:800}.packing-warning-card summary::-webkit-details-marker{display:none}.packing-warning-card summary::after{content:"展開⌄";flex:0 0 auto;color:#278dbb;font-size:12px;font-weight:800}.packing-warning-card[open] summary::after{content:"收合⌃"}.packing-warning-body{padding:0 15px 14px;border-top:1px solid rgba(220,231,227,.75)}.packing-warning-card h4{margin:14px 0 7px;color:#154a68}.packing-warning-card ul{margin:0;padding-left:1.25rem}.packing-warning-card li{margin:6px 0;line-height:1.55}.packing-warning-card strong{font-weight:800}#tab-luggage .progress-card{padding:11px 14px!important;margin:0 0 14px!important;border:1px solid #dce7e3!important;border-radius:16px!important;color:#174a69!important;background:rgba(255,253,249,.97)!important;box-shadow:0 7px 18px rgba(42,78,88,.05)!important}#tab-luggage .progress-top b{color:#0b4d78!important;font-size:22px!important}#tab-luggage .progress-top span{color:#6f8490!important;opacity:1!important}#tab-luggage .progress-track{height:7px!important;margin-top:8px!important;background:#e7efec!important}#tab-luggage .progress-fill{background:linear-gradient(90deg,#6fa69a,#4b9bc0)!important}</style></head>
 <body data-page="luggage"><div class="app-shell"><header class="hero"><div class="stars"></div><div class="hero-inner"><div class="eyebrow"><span>EUROPE · AURORA 2026</span><span class="eyebrow-badge" id="networkBadge"><i class="online-dot"></i><span>離線可查看</span></span></div><h1>18天歐洲極光之旅</h1><p class="hero-sub">2026.09.24 — 10.11 · 奧地利・芬蘭・挪威・荷蘭</p><div class="route-line"><span class="route-stop">台北</span><span class="route-arrow">›</span><span class="route-stop">維也納</span><span class="route-arrow">›</span><span class="route-stop">赫爾辛基</span><span class="route-arrow">›</span><span class="route-stop">拉普蘭</span><span class="route-arrow">›</span><span class="route-stop">特羅姆瑟</span><span class="route-arrow">›</span><span class="route-stop">阿姆斯特丹</span></div><div class="hero-stats"><div class="hero-stat"><b>18 天</b><small>完整逐時行程</small></div><div class="hero-stat"><b>248 站</b><small>一鍵開啟導航</small></div><div class="hero-stat"><b id="countdownValue">—</b><small id="countdownLabel">距離出發</small></div></div></div></header>
 <main><section class="tab-panel active" id="tab-luggage"><div class="section-head"><div><h2>行前與工具</h2><p>旅行 App、入境、待辦、打包與退稅集中查看</p></div><button class="small-action" id="resetChecks">重設勾選</button></div><div class="segmented" id="luggageSegments"><a class="segment" href="apps/">旅行 App</a><a class="segment" href="entry.html">入境攻略</a><a class="segment" href="booking.html">行前待辦</a><a class="segment active" href="checklist.html">行李清單</a><a class="segment" href="tax.html">退稅攻略</a></div><div class="subview active"><div id="checklistList" style="display:none"></div><div id="packingWarnings"></div><div class="progress-card"><div class="progress-top"><div><b id="checkPercent">0%</b><span> 完成</span></div><span id="checkCount">0 / 0</span></div><div class="progress-track"><div class="progress-fill" id="progressFill"></div></div></div><div id="checklist"></div></div></section></main>
 <nav class="bottom-nav" aria-label="主要導覽">
@@ -59,30 +59,32 @@
   ];
 
   const warningHtml = `
-    <section class="check-group packing-warning-card">
-      <h3>⚠️ 行李禁帶・限制提醒</h3>
-      <h4>✈️ 飛機行李</h4>
-      <ul>
-        <li>🔪 <strong>水果刀／食物剪刀</strong> → 僅可放托運行李</li>
-        <li>🔋 <strong>行動電源</strong> → 僅可隨身攜帶，不可托運</li>
-        <li>🧴 <strong>易燃氣霧型防水噴霧</strong> → 不攜帶，鞋子於台灣出發前先完成防水處理</li>
-        <li>💧 <strong>隨身液體／膠狀用品</strong> → 單瓶 ≤100 mL，集中放透明夾鏈袋；大容量請托運</li>
-        <li>⚡ <strong>插電電器</strong> → 出發前確認為國際電壓／可變壓，支援當地 220–240V</li>
-      </ul>
-      <h4>🥩 食品・海關</h4>
-      <ul>
-        <li>❌ 不攜帶肉乾、肉鬆、香腸、含肉料理包等肉類食品入境 EU</li>
-        <li>❌ 不攜帶新鮮水果、蔬菜、植物等進入 EU</li>
-        <li>❌ 從歐洲返台不攜帶肉類製品、新鮮水果、蔬果及植物</li>
-        <li>🥣 濃湯包／泡麵 → 選擇商業密封、常溫保存、<strong>不含肉類成分</strong></li>
-      </ul>
-      <h4>🇳🇴 挪威段特別注意</h4>
-      <ul>
-        <li>芬蘭 → 挪威屬 EU → 非 EU，食品及商品仍需遵守挪威海關規定</li>
-        <li>挪威 → 荷蘭為重新進入 EU，挪威購買的高價商品需留意 EU 入境免稅額</li>
-        <li>挪威購買的馴鹿肉乾、香腸、肉罐頭等 <strong>不要帶回台灣</strong></li>
-      </ul>
-    </section>`;
+    <details class="packing-warning-card">
+      <summary>⚠️ 行李禁帶・限制提醒</summary>
+      <div class="packing-warning-body">
+        <h4>✈️ 飛機行李</h4>
+        <ul>
+          <li>🔪 <strong>水果刀／食物剪刀</strong> → 僅可放托運行李</li>
+          <li>🔋 <strong>行動電源</strong> → 僅可隨身攜帶，不可托運</li>
+          <li>🧴 <strong>易燃氣霧型防水噴霧</strong> → 不攜帶，鞋子於台灣出發前先完成防水處理</li>
+          <li>💧 <strong>隨身液體／膠狀用品</strong> → 單瓶 ≤100 mL，集中放透明夾鏈袋；大容量請托運</li>
+          <li>⚡ <strong>插電電器</strong> → 出發前確認為國際電壓／可變壓，支援當地 220–240V</li>
+        </ul>
+        <h4>🥩 食品・海關</h4>
+        <ul>
+          <li>❌ 不攜帶肉乾、肉鬆、香腸、含肉料理包等肉類食品入境 EU</li>
+          <li>❌ 不攜帶新鮮水果、蔬菜、植物等進入 EU</li>
+          <li>❌ 從歐洲返台不攜帶肉類製品、新鮮水果、蔬果及植物</li>
+          <li>🥣 濃湯包／泡麵 → 選擇商業密封、常溫保存、<strong>不含肉類成分</strong></li>
+        </ul>
+        <h4>🇳🇴 挪威段特別注意</h4>
+        <ul>
+          <li>芬蘭 → 挪威屬 EU → 非 EU，食品及商品仍需遵守挪威海關規定</li>
+          <li>挪威 → 荷蘭為重新進入 EU，挪威購買的高價商品需留意 EU 入境免稅額</li>
+          <li>挪威購買的馴鹿肉乾、香腸、肉罐頭等 <strong>不要帶回台灣</strong></li>
+        </ul>
+      </div>
+    </details>`;
 
   function readChecks(){
     try{return JSON.parse(localStorage.getItem('aurora-checks')||'{}')||{}}catch(e){return{}}
