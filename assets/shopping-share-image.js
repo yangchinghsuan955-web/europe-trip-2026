@@ -20,6 +20,12 @@
     if(c==='荷蘭'||c==='阿姆斯特丹')return '荷蘭 Netherlands';
     return c;
   }
+  function countryTextTitle(country){
+    var c=normalizeCountry(country);
+    if(c==='奧地利')return '維也納';
+    if(c==='阿姆斯特丹')return '荷蘭';
+    return c;
+  }
   function countryTint(country){
     var c=normalizeCountry(country);
     if(c==='維也納'||c==='奧地利')return '#fff1ed';
@@ -169,11 +175,67 @@
     }catch(e){setStatus(e&&e.message==='empty'?'目前沒有購物項目。':'圖片產生失敗，請先使用「分享文字」。');}
     finally{button.disabled=false;button.textContent=original;}
   }
+  function buildCleanShareText(){
+    var items=readItems();
+    if(!items.length)return '🛍️ 2026 極光旅行購物清單\n\n目前沒有購物項目。';
+    var pending=items.filter(function(item){return !item.done;}).length,bought=items.length-pending;
+    var groups=[],map={};
+    items.forEach(function(item){
+      var key=countryTextTitle(item.country||'其他');
+      if(!map[key]){map[key]={country:key,items:[]};groups.push(map[key]);}
+      map[key].items.push(item);
+    });
+    var lines=['🛍️ 2026 極光旅行購物清單','待買 '+pending+' 項・已買 '+bought+' 項・共 '+items.length+' 項'];
+    groups.forEach(function(group){
+      lines.push('','📍 '+group.country);
+      var waiting=group.items.filter(function(item){return !item.done;}),done=group.items.filter(function(item){return item.done;});
+      if(waiting.length){
+        lines.push('待買');
+        waiting.forEach(function(item){appendTextItem(lines,item);});
+      }
+      if(done.length){
+        if(waiting.length)lines.push('');
+        lines.push('已買');
+        done.forEach(function(item){appendTextItem(lines,item);});
+      }
+    });
+    return lines.join('\n');
+  }
+  function appendTextItem(lines,item){
+    lines.push('・'+String(item.name||'未命名商品')+' × '+(Number(item.qty)||1));
+    var meta=[];
+    if(item.city)meta.push('地點：'+item.city);
+    if(item.forWho)meta.push('給：'+item.forWho);
+    if(item.budget)meta.push('預算：'+item.budget);
+    if(item.note)meta.push('備註：'+item.note);
+    if(meta.length)lines.push('　'+meta.join('｜'));
+  }
+  async function shareCleanText(){
+    var text=buildCleanShareText();
+    try{
+      if(navigator.share){
+        await navigator.share({title:'2026 極光旅行購物清單',text:text});
+        setStatus('已開啟分享選單。');
+        return;
+      }
+    }catch(e){if(e&&e.name==='AbortError')return;}
+    try{
+      await navigator.clipboard.writeText(text);setStatus('此瀏覽器未提供分享選單，已將清單複製到剪貼簿。');
+    }catch(e){
+      var ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();setStatus('已將清單複製到剪貼簿。');
+    }
+  }
   function init(){
     var textButton=document.getElementById('shareShoppingList');if(!textButton||document.getElementById('shareShoppingImage'))return;
     textButton.textContent='分享文字';
     var imageButton=document.createElement('button');imageButton.className='form-btn secondary';imageButton.id='shareShoppingImage';imageButton.type='button';imageButton.textContent='分享圖片';textButton.parentNode.insertBefore(imageButton,textButton);
     imageButton.addEventListener('click',function(){prepareShareImage(imageButton);});
+    document.addEventListener('click',function(event){
+      var target=event.target&&event.target.closest?event.target.closest('#shareShoppingList'):null;
+      if(!target)return;
+      event.preventDefault();event.stopPropagation();event.stopImmediatePropagation();
+      shareCleanText();
+    },true);
     var actions=textButton.parentElement,note=document.createElement('p');note.className='device-note';note.id='shoppingShareImageNote';note.textContent='🖼️ 分享圖片會在手機本機產生；商品圖若無法讀取，會自動改用文字卡，不影響分享。';actions.parentNode.insertBefore(note,actions.nextSibling);
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
