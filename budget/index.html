@@ -180,7 +180,7 @@
   $('#shoppingRestoreFile').addEventListener('change',e=>{const file=e.target.files&&e.target.files[0];if(file)restoreFromFile(file)});
   $('#shareShoppingList').addEventListener('click',shareShoppingList);
   $('#souvenirList').addEventListener('click',e=>{const b=e.target.closest('[data-add-item]');if(!b)return;items.push({name:b.dataset.addItem,country:b.dataset.addCountry||'其他',city:'',qty:1,budget:'',forWho:'',note:'',done:false});save();$$('#foodSegments .segment').find(x=>x.dataset.foodView==='shopping').click()});
-  function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]))}function attr(s){return esc(s)}
+  function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}function attr(s){return esc(s)}
   render();
   const trip=new Date('2026-09-24T21:30:00+08:00'),now=new Date(),days=Math.max(0,Math.ceil((trip-now)/86400000));$('#countdownValue').textContent=days;$('#countdownLabel').textContent=days?'距離出發':'旅程進行中';
 })();
