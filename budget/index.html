@@ -116,6 +116,7 @@
 <div class="image-modal" id="mealModal" hidden><button class="image-modal-close" id="mealModalClose" type="button" aria-label="關閉">×</button><img src="../assets/meal-overview.svg" alt="放大的18天每日餐食總覽"></div>
 <script src="../assets/shopping-data.js?v=20260908-image2"></script>
 <script src="../assets/finland-shopping-extra.js?v=20260908-assets1"></script>
+<script src="../assets/vienna-shopping-assets.js?v=20260908-assets1"></script>
 <script>
 (function(){
   const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
@@ -179,7 +180,7 @@
   $('#shoppingRestoreFile').addEventListener('change',e=>{const file=e.target.files&&e.target.files[0];if(file)restoreFromFile(file)});
   $('#shareShoppingList').addEventListener('click',shareShoppingList);
   $('#souvenirList').addEventListener('click',e=>{const b=e.target.closest('[data-add-item]');if(!b)return;items.push({name:b.dataset.addItem,country:b.dataset.addCountry||'其他',city:'',qty:1,budget:'',forWho:'',note:'',done:false});save();$$('#foodSegments .segment').find(x=>x.dataset.foodView==='shopping').click()});
-  function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}function attr(s){return esc(s)}
+  function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]))}function attr(s){return esc(s)}
   render();
   const trip=new Date('2026-09-24T21:30:00+08:00'),now=new Date(),days=Math.max(0,Math.ceil((trip-now)/86400000));$('#countdownValue').textContent=days;$('#countdownLabel').textContent=days?'距離出發':'旅程進行中';
 })();
