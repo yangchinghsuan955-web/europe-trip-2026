@@ -1,4 +1,4 @@
-/* 購物清單分享圖片：在手機本機產生，不上傳；外部圖片失敗時以文字卡替代。 */
+/* 購物清單分享：主畫面只顯示一個「分享我的購物清單」，再選圖文或純文字。 */
 (function(){
   var KEY='aurora-shopping-list-v1';
   var currentShareFile=null,currentShareUrl='';
@@ -68,7 +68,12 @@
     }
     if(lines.length<maxLines&&line)lines.push(line);
     if(lines.length===maxLines){
-      var consumed=lines.join('').length;if(consumed<chars.length){var last=lines[maxLines-1];while(last&&ctx.measureText(last+'…').width>maxWidth)last=last.slice(0,-1);lines[maxLines-1]=last+'…';}
+      var consumed=lines.join('').length;
+      if(consumed<chars.length){
+        var last=lines[maxLines-1];
+        while(last&&ctx.measureText(last+'…').width>maxWidth)last=last.slice(0,-1);
+        lines[maxLines-1]=last+'…';
+      }
     }
     return lines;
   }
@@ -94,31 +99,53 @@
       });
     }).catch(function(){
       if(!sameOrigin)return null;
-      return new Promise(function(resolve){var img=new Image();img.onload=function(){resolve(img)};img.onerror=function(){resolve(null)};img.decoding='async';img.src=absolute;});
+      return new Promise(function(resolve){
+        var img=new Image();img.onload=function(){resolve(img);};img.onerror=function(){resolve(null);};img.decoding='async';img.src=absolute;
+      });
     }).finally(function(){clearTimeout(timer);});
   }
   function canvasBlob(canvas){
     return new Promise(function(resolve,reject){canvas.toBlob(function(blob){if(blob)resolve(blob);else reject(new Error('image export failed'));},'image/jpeg',0.9);});
   }
   function filename(){
-    var d=new Date(),pad=function(n){return String(n).padStart(2,'0')};return '極光旅行購物清單_'+d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'_'+pad(d.getHours())+pad(d.getMinutes())+'.jpg';
+    var d=new Date(),pad=function(n){return String(n).padStart(2,'0');};
+    return '極光旅行購物清單_'+d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'_'+pad(d.getHours())+pad(d.getMinutes())+'.jpg';
   }
-  function ensureModal(){
-    var modal=document.getElementById('shoppingSharePreview');if(modal)return modal;
-    var style=document.createElement('style');style.id='shoppingShareImageStyle';style.textContent=[
-      '#shoppingSharePreview{position:fixed;inset:0;z-index:220;background:rgba(8,24,33,.88);display:grid;place-items:center;padding:calc(14px + env(safe-area-inset-top,0px)) 14px calc(14px + env(safe-area-inset-bottom,0px))}',
-      '#shoppingSharePreview[hidden]{display:none}',
-      '#shoppingSharePreview .share-preview-card{width:min(94vw,620px);max-height:94dvh;box-sizing:border-box;background:#fffdf8;border-radius:20px;padding:12px;display:grid;gap:10px;box-shadow:0 18px 50px rgba(0,0,0,.25)}',
+  function ensureCommonStyle(){
+    if(document.getElementById('shoppingShareUiStyle'))return;
+    var style=document.createElement('style');style.id='shoppingShareUiStyle';style.textContent=[
+      '#shoppingSharePreview,#shoppingShareChoice{position:fixed;inset:0;z-index:220;background:rgba(8,24,33,.72);display:grid;place-items:center;padding:calc(14px + env(safe-area-inset-top,0px)) 14px calc(14px + env(safe-area-inset-bottom,0px))}',
+      '#shoppingSharePreview[hidden],#shoppingShareChoice[hidden]{display:none}',
+      '#shoppingSharePreview .share-preview-card,#shoppingShareChoice .share-choice-card{width:min(94vw,620px);box-sizing:border-box;background:#fffdf8;border-radius:22px;padding:16px;box-shadow:0 18px 50px rgba(0,0,0,.24)}',
+      '#shoppingSharePreview .share-preview-card{max-height:94dvh;display:grid;gap:10px}',
       '#shoppingSharePreview img{display:block;max-width:100%;max-height:74dvh;justify-self:center;object-fit:contain;border-radius:12px;border:1px solid #dce7e6;background:#f7faf9}',
       '#shoppingSharePreview .share-preview-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}',
-      '#shoppingSharePreview .share-preview-actions button{border:0;border-radius:999px;min-height:42px;padding:8px 15px;font:inherit;font-weight:800;cursor:pointer}',
+      '#shoppingSharePreview .share-preview-actions button,#shoppingShareChoice button{font:inherit;cursor:pointer}',
+      '#shoppingSharePreview .share-preview-actions button{border:0;border-radius:999px;min-height:42px;padding:8px 15px;font-weight:800}',
       '#shoppingSharePreview .share-preview-close{background:#f4f2ed;color:#174a69;border:1px solid #d8e1df!important}',
-      '#shoppingSharePreview .share-preview-send{background:#174a69;color:#fff}'
+      '#shoppingSharePreview .share-preview-send{background:#174a69;color:#fff}',
+      '#shoppingShareChoice .share-choice-title{margin:0;color:#174a69;font-size:21px;font-weight:850}',
+      '#shoppingShareChoice .share-choice-sub{margin:5px 0 14px;color:#71838b;font-size:13px}',
+      '#shoppingShareChoice .share-choice-options{display:grid;gap:10px}',
+      '#shoppingShareChoice .share-choice-option{width:100%;display:grid;grid-template-columns:44px minmax(0,1fr);gap:11px;align-items:center;text-align:left;border:1px solid #d8e3e1;border-radius:17px;background:#fff;padding:13px}',
+      '#shoppingShareChoice .share-choice-option:active{background:#f4f8f7}',
+      '#shoppingShareChoice .share-choice-icon{width:44px;height:44px;border-radius:13px;background:#eef7f6;display:grid;place-items:center;font-size:24px}',
+      '#shoppingShareChoice .share-choice-copy{min-width:0}',
+      '#shoppingShareChoice .share-choice-name{display:flex;align-items:center;gap:7px;color:#174a69;font-weight:850;font-size:16px}',
+      '#shoppingShareChoice .share-choice-badge{display:inline-block;border-radius:999px;background:#dff4f5;color:#2a6685;padding:2px 7px;font-size:10px;font-weight:850}',
+      '#shoppingShareChoice .share-choice-desc{display:block;margin-top:4px;color:#71838b;font-size:12px;line-height:1.45}',
+      '#shoppingShareChoice .share-choice-cancel{width:100%;margin-top:12px;border:0;background:transparent;color:#5f7885;font-weight:800;min-height:40px}'
     ].join('');document.head.appendChild(style);
-    modal=document.createElement('div');modal.id='shoppingSharePreview';modal.hidden=true;modal.innerHTML='<div class="share-preview-card" role="dialog" aria-modal="true" aria-label="購物清單圖片預覽"><img alt="購物清單分享圖片預覽"><div class="share-preview-actions"><button class="share-preview-close" type="button">關閉</button><button class="share-preview-send" type="button">分享此圖片</button></div></div>';
+  }
+  function ensurePreviewModal(){
+    var modal=document.getElementById('shoppingSharePreview');if(modal)return modal;
+    ensureCommonStyle();
+    modal=document.createElement('div');modal.id='shoppingSharePreview';modal.hidden=true;
+    modal.innerHTML='<div class="share-preview-card" role="dialog" aria-modal="true" aria-label="購物清單圖片預覽"><img alt="購物清單分享圖片預覽"><div class="share-preview-actions"><button class="share-preview-close" type="button">關閉</button><button class="share-preview-send" type="button">分享此圖片</button></div></div>';
     document.body.appendChild(modal);
     function close(){modal.hidden=true;document.body.style.overflow='';}
-    modal.querySelector('.share-preview-close').addEventListener('click',close);modal.addEventListener('click',function(e){if(e.target===modal)close();});
+    modal.querySelector('.share-preview-close').addEventListener('click',close);
+    modal.addEventListener('click',function(e){if(e.target===modal)close();});
     modal.querySelector('.share-preview-send').addEventListener('click',async function(){
       if(!currentShareFile)return;
       try{
@@ -132,7 +159,7 @@
   }
   async function buildShareImage(){
     var items=readItems();if(!items.length)throw new Error('empty');
-    var products=allProducts(),imageUrls=items.map(function(item){return imageUrlFor(item,products)}),unique=[],seen={};
+    var products=allProducts(),imageUrls=items.map(function(item){return imageUrlFor(item,products);}),unique=[],seen={};
     imageUrls.forEach(function(url){if(url&&!seen[url]&&unique.length<24){seen[url]=1;unique.push(url);}});
     var loaded=await Promise.all(unique.map(loadImage)),imageMap={};unique.forEach(function(url,i){imageMap[url]=loaded[i]||null;});
     var groups=[],map={};items.forEach(function(item){var country=normalizeCountry(item.country);if(!map[country]){map[country]={country:country,items:[]};groups.push(map[country]);}map[country].items.push(item);});
@@ -142,7 +169,7 @@
     ctx.fillStyle='#f8f6f0';ctx.fillRect(0,0,W,H);
     roundedRect(ctx,26,24,W-52,140,30);ctx.fillStyle='#dff4f5';ctx.fill();
     ctx.fillStyle='#174a69';ctx.font='800 48px "PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif';ctx.fillText('2026 極光旅行購物清單',margin,82);
-    var pending=items.filter(function(x){return !x.done}).length,bought=items.length-pending;
+    var pending=items.filter(function(x){return !x.done;}).length,bought=items.length-pending;
     ctx.font='650 25px "PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif';ctx.fillStyle='#5f7885';ctx.fillText('待買 '+pending+' 項・已買 '+bought+' 項・共 '+items.length+' 項',margin,126);
     var y=headerH,failed=0;
     groups.forEach(function(group){
@@ -151,7 +178,8 @@
         roundedRect(ctx,margin,y,W-margin*2,itemH,22);ctx.fillStyle=item.done?'#f2f3f1':'#fff';ctx.fill();ctx.strokeStyle='#d8e3e1';ctx.lineWidth=2;ctx.stroke();
         var imgX=margin+18,imgY=y+18,imgS=130,url=imageUrlFor(item,products),img=imageMap[url];
         roundedRect(ctx,imgX,imgY,imgS,imgS,18);ctx.fillStyle='#f5f7f4';ctx.fill();
-        if(img){ctx.save();roundedRect(ctx,imgX,imgY,imgS,imgS,18);ctx.clip();drawContain(ctx,img,imgX+8,imgY+8,imgS-16,imgS-16);ctx.restore();}else{if(url)failed++;ctx.fillStyle='#8aa0a8';ctx.font='800 44px "PingFang TC",sans-serif';ctx.textAlign='center';ctx.fillText((String(item.name||'?').trim().charAt(0)||'?'),imgX+imgS/2,imgY+82);ctx.textAlign='left';}
+        if(img){ctx.save();roundedRect(ctx,imgX,imgY,imgS,imgS,18);ctx.clip();drawContain(ctx,img,imgX+8,imgY+8,imgS-16,imgS-16);ctx.restore();}
+        else{if(url)failed++;ctx.fillStyle='#8aa0a8';ctx.font='800 44px "PingFang TC",sans-serif';ctx.textAlign='center';ctx.fillText((String(item.name||'?').trim().charAt(0)||'?'),imgX+imgS/2,imgY+82);ctx.textAlign='left';}
         var textX=imgX+imgS+24,textW=W-margin-26-textX-118;
         ctx.fillStyle=item.done?'#6f8086':'#174a69';ctx.font='800 31px "PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif';
         var nameLines=wrapLines(ctx,item.name||'未命名商品',textW,2);nameLines.forEach(function(line,index){ctx.fillText(line,textX,y+48+index*38);});
@@ -166,13 +194,13 @@
     return {blob:await canvasBlob(canvas),failed:failed};
   }
   async function prepareShareImage(button){
-    var items=readItems();if(!items.length){setStatus('目前沒有購物項目，先加入商品後再分享圖片。');return;}
-    var original=button.textContent;button.disabled=true;button.textContent='正在產生圖片…';setStatus('正在整理購物清單圖片，請稍候…');
+    var items=readItems();if(!items.length){setStatus('目前沒有購物項目，先加入商品後再分享。');return;}
+    var original=button.textContent;button.disabled=true;button.textContent='正在產生圖文清單…';setStatus('正在整理圖文清單，請稍候…');
     try{
       var result=await buildShareImage();if(currentShareUrl)URL.revokeObjectURL(currentShareUrl);currentShareFile=new File([result.blob],filename(),{type:'image/jpeg'});currentShareUrl=URL.createObjectURL(result.blob);
-      var modal=ensureModal(),img=modal.querySelector('img'),send=modal.querySelector('.share-preview-send');img.src=currentShareUrl;send.textContent=(navigator.canShare&&navigator.canShare({files:[currentShareFile]}))?'分享此圖片':'儲存圖片';modal.hidden=false;document.body.style.overflow='hidden';
-      setStatus(result.failed?'圖片已完成；有 '+result.failed+' 張商品圖無法載入，已以文字卡代替。':'圖片已完成，可以預覽後分享。');
-    }catch(e){setStatus(e&&e.message==='empty'?'目前沒有購物項目。':'圖片產生失敗，請先使用「分享文字」。');}
+      var modal=ensurePreviewModal(),img=modal.querySelector('img'),send=modal.querySelector('.share-preview-send');img.src=currentShareUrl;send.textContent=(navigator.canShare&&navigator.canShare({files:[currentShareFile]}))?'分享此圖片':'儲存圖片';modal.hidden=false;document.body.style.overflow='hidden';
+      setStatus(result.failed?'圖文清單已完成；有 '+result.failed+' 張商品圖無法載入，已以文字卡代替。':'圖文清單已完成，可以預覽後分享。');
+    }catch(e){setStatus(e&&e.message==='empty'?'目前沒有購物項目。':'圖文清單產生失敗，請改用「純文字清單」。');}
     finally{button.disabled=false;button.textContent=original;}
   }
   function buildCleanShareText(){
@@ -189,15 +217,8 @@
     groups.forEach(function(group){
       lines.push('','📍 '+group.country);
       var waiting=group.items.filter(function(item){return !item.done;}),done=group.items.filter(function(item){return item.done;});
-      if(waiting.length){
-        lines.push('待買');
-        waiting.forEach(function(item){appendTextItem(lines,item);});
-      }
-      if(done.length){
-        if(waiting.length)lines.push('');
-        lines.push('已買');
-        done.forEach(function(item){appendTextItem(lines,item);});
-      }
+      if(waiting.length){lines.push('待買');waiting.forEach(function(item){appendTextItem(lines,item);});}
+      if(done.length){if(waiting.length)lines.push('');lines.push('已買');done.forEach(function(item){appendTextItem(lines,item);});}
     });
     return lines.join('\n');
   }
@@ -213,30 +234,40 @@
   async function shareCleanText(){
     var text=buildCleanShareText();
     try{
-      if(navigator.share){
-        await navigator.share({title:'2026 極光旅行購物清單',text:text});
-        setStatus('已開啟分享選單。');
-        return;
-      }
+      if(navigator.share){await navigator.share({title:'2026 極光旅行購物清單',text:text});setStatus('已開啟系統分享選單。');return;}
     }catch(e){if(e&&e.name==='AbortError')return;}
-    try{
-      await navigator.clipboard.writeText(text);setStatus('此瀏覽器未提供分享選單，已將清單複製到剪貼簿。');
-    }catch(e){
-      var ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();setStatus('已將清單複製到剪貼簿。');
-    }
+    try{await navigator.clipboard.writeText(text);setStatus('已將純文字清單複製到剪貼簿。');}
+    catch(e){var ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();setStatus('已將純文字清單複製到剪貼簿。');}
+  }
+  function ensureChoiceModal(mainButton){
+    var modal=document.getElementById('shoppingShareChoice');if(modal)return modal;
+    ensureCommonStyle();
+    modal=document.createElement('div');modal.id='shoppingShareChoice';modal.hidden=true;
+    modal.innerHTML='<div class="share-choice-card" role="dialog" aria-modal="true" aria-labelledby="shoppingShareChoiceTitle"><h3 class="share-choice-title" id="shoppingShareChoiceTitle">選擇分享方式</h3><p class="share-choice-sub">選擇最適合這次分享的清單格式。</p><div class="share-choice-options"><button class="share-choice-option" type="button" data-share-choice="image"><span class="share-choice-icon">🖼️</span><span class="share-choice-copy"><span class="share-choice-name">圖文清單 <span class="share-choice-badge">推薦</span></span><span class="share-choice-desc">有商品圖片、品名與數量，適合分享給同行家人</span></span></button><button class="share-choice-option" type="button" data-share-choice="text"><span class="share-choice-icon">📝</span><span class="share-choice-copy"><span class="share-choice-name">純文字清單</span><span class="share-choice-desc">方便複製、轉貼、搜尋與修改</span></span></button></div><button class="share-choice-cancel" type="button">取消</button></div>';
+    document.body.appendChild(modal);
+    function close(){modal.hidden=true;document.body.style.overflow='';}
+    modal.querySelector('.share-choice-cancel').addEventListener('click',close);
+    modal.addEventListener('click',function(e){if(e.target===modal)close();});
+    modal.querySelector('[data-share-choice="image"]').addEventListener('click',function(){close();prepareShareImage(mainButton);});
+    modal.querySelector('[data-share-choice="text"]').addEventListener('click',function(){close();shareCleanText();});
+    return modal;
+  }
+  function openChoice(mainButton){
+    if(!readItems().length){setStatus('目前沒有購物項目，先加入商品後再分享。');return;}
+    var modal=ensureChoiceModal(mainButton);modal.hidden=false;document.body.style.overflow='hidden';
   }
   function init(){
-    var textButton=document.getElementById('shareShoppingList');if(!textButton||document.getElementById('shareShoppingImage'))return;
-    textButton.textContent='分享文字';
-    var imageButton=document.createElement('button');imageButton.className='form-btn secondary';imageButton.id='shareShoppingImage';imageButton.type='button';imageButton.textContent='分享圖片';textButton.parentNode.insertBefore(imageButton,textButton);
-    imageButton.addEventListener('click',function(){prepareShareImage(imageButton);});
+    var shareButton=document.getElementById('shareShoppingList');if(!shareButton)return;
+    var legacyImage=document.getElementById('shareShoppingImage');if(legacyImage)legacyImage.remove();
+    var legacyNote=document.getElementById('shoppingShareImageNote');if(legacyNote)legacyNote.remove();
+    shareButton.textContent='分享我的購物清單';
+    shareButton.setAttribute('aria-haspopup','dialog');
     document.addEventListener('click',function(event){
       var target=event.target&&event.target.closest?event.target.closest('#shareShoppingList'):null;
       if(!target)return;
       event.preventDefault();event.stopPropagation();event.stopImmediatePropagation();
-      shareCleanText();
+      openChoice(shareButton);
     },true);
-    var actions=textButton.parentElement,note=document.createElement('p');note.className='device-note';note.id='shoppingShareImageNote';note.textContent='🖼️ 分享圖片會在手機本機產生；商品圖若無法讀取，會自動改用文字卡，不影響分享。';actions.parentNode.insertBefore(note,actions.nextSibling);
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
