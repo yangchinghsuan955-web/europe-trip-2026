@@ -95,27 +95,31 @@ document.addEventListener('DOMContentLoaded',function(){
     note=note.replace(/・?＋ 超市採買 🛒/g,'').replace(/＋ 超市採買 🛒/g,'').trim();
     return '<div class="meal-card-row '+kind+'"><span class="meal-card-icon">'+icon+'</span><span class="meal-card-copy"><strong>'+name+'｜'+esc(data[0])+'</strong>'+(note?'<small>'+esc(note)+'</small>':'')+(market?'<em>🛒 超市採買</em>':'')+'</span><span class="meal-card-status '+data[2]+'">'+esc(label[data[2]])+'</span></div>';
   }
-  host.innerHTML='<div class="notice"><div class="notice-icon">🍴</div><div><strong>18 天每日餐食</strong><p>上方可展開完整一覽表；下方卡牌可快速查看每日早餐、午餐、晚餐與超市採買。</p></div></div>'+
-    '<details class="meal-card-overview"><summary><span>🗓️</span><span><b>展開 18 天餐食一覽表</b><small>一次確認自理、餐廳、飯店供餐與超市採買</small></span><i>⌄</i></summary><div class="meal-card-overview-body"><button type="button" id="mealCardOverviewZoom" aria-label="放大18天每日餐食總覽"><img src="'+overviewSrc+'" alt="18天早餐午餐晚餐總覽"></button><p>點圖可放大查看</p></div></details>'+
-    '<div class="meal-card-tip"><span>💡</span><div><b>卡牌標示</b><br>「自理」只顯示一次；有補貨行程時另外標示「🛒 超市採買」。</div></div>'+
+  host.innerHTML='<details class="meal-card-overview"><summary><span class="meal-menu-icon" aria-hidden="true"><span class="meal-menu-rings"></span><span class="meal-menu-sheet"><b>Menu</b><i>🍴</i></span><span class="meal-menu-leaf left"></span><span class="meal-menu-leaf right"></span></span><span class="meal-overview-copy"><b>展開 18 天餐食一覽表</b><small>一次確認自理、餐廳、飯店供餐與超市採買</small></span><span class="meal-overview-chevron" aria-hidden="true">⌄</span></summary><div class="meal-card-overview-body"><button type="button" id="mealCardOverviewZoom" aria-label="放大18天每日餐食總覽"><img src="'+overviewSrc+'" alt="18天早餐午餐晚餐總覽"></button><p>點圖可放大查看</p></div></details>'+
     '<div class="meal-card-grid">'+meals.map(function(x){return '<article class="meal-card"><header><span>D'+x.d+'</span><div><b>'+esc(x.date)+'｜'+esc(x.place)+'</b>'+(x.sub?'<small>'+esc(x.sub)+'</small>':'')+'</div></header>'+row('b',x.b)+row('l',x.l)+row('n',x.n)+'</article>'}).join('')+'</div>';
 
   var css=document.createElement('style');
   css.textContent='\
-#food-meals .meal-card-overview{margin:0 0 14px;border:1px solid rgba(80,144,165,.22);border-radius:18px;background:linear-gradient(135deg,rgba(238,249,255,.96),rgba(255,250,244,.96));box-shadow:0 8px 20px rgba(25,71,92,.07);overflow:hidden}\
-#food-meals .meal-card-overview summary{list-style:none;display:flex;align-items:center;gap:10px;min-height:58px;padding:12px 15px;cursor:pointer;color:var(--navy)}\
+#food-meals .meal-card-overview{margin:2px 0 14px;border:2px solid #72ccef;border-radius:20px;background:linear-gradient(135deg,#eefaff 0%,#f8fdff 62%,#fffdf8 100%);box-shadow:0 10px 24px rgba(34,128,170,.12);overflow:hidden}\
+#food-meals .meal-card-overview summary{list-style:none;display:flex;align-items:center;gap:12px;min-height:72px;padding:12px 14px;cursor:pointer;color:var(--navy)}\
 #food-meals .meal-card-overview summary::-webkit-details-marker{display:none}\
-#food-meals .meal-card-overview summary>span:first-child{display:grid;place-items:center;flex:0 0 36px;width:36px;height:36px;border-radius:12px;background:#fff4cb;font-size:19px}\
-#food-meals .meal-card-overview summary>span:nth-child(2){min-width:0;flex:1}\
-#food-meals .meal-card-overview summary b{display:block;font-size:14px}\
-#food-meals .meal-card-overview summary small{display:block;margin-top:2px;color:var(--muted);font-size:11px;font-weight:650}\
-#food-meals .meal-card-overview summary i{font-style:normal;font-size:20px;transition:transform .2s ease}\
-#food-meals .meal-card-overview[open] summary i{transform:rotate(180deg)}\
+#food-meals .meal-menu-icon{position:relative;display:block;flex:0 0 56px;width:56px;height:54px}\
+#food-meals .meal-menu-sheet{position:absolute;left:11px;top:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;width:36px;height:42px;border:1.5px solid #b9877e;border-radius:7px;background:linear-gradient(160deg,#fff8ef,#ffeef0);box-shadow:0 3px 7px rgba(99,72,63,.14);transform:rotate(-5deg);color:#8d615b}\
+#food-meals .meal-menu-sheet b{font-family:cursive;font-size:10px;line-height:1;color:#a86c63}\
+#food-meals .meal-menu-sheet i{margin-top:4px;font-size:15px;font-style:normal;filter:saturate(.7)}\
+#food-meals .meal-menu-rings{position:absolute;z-index:2;left:14px;top:3px;width:31px;height:8px;background:repeating-linear-gradient(90deg,#526c7a 0 2px,transparent 2px 7px);border-radius:8px;transform:rotate(-5deg)}\
+#food-meals .meal-menu-leaf{position:absolute;bottom:4px;width:13px;height:7px;border:2px solid #789a78;border-width:2px 0 0 0;border-radius:50%;opacity:.85}\
+#food-meals .meal-menu-leaf.left{left:2px;transform:rotate(35deg)}#food-meals .meal-menu-leaf.right{right:1px;transform:rotate(-35deg)}\
+#food-meals .meal-menu-icon:after{content:"";position:absolute;right:1px;top:8px;width:11px;height:15px;border-top:3px solid #f3b53f;border-radius:50%;transform:rotate(24deg)}\
+#food-meals .meal-overview-copy{min-width:0;flex:1}\
+#food-meals .meal-overview-copy b{display:block;color:#0f587d;font-size:15px;line-height:1.35;font-weight:900;letter-spacing:.01em}\
+#food-meals .meal-overview-copy small{display:block;margin-top:4px;color:#6e8796;font-size:11px;line-height:1.4;font-weight:700}\
+#food-meals .meal-overview-chevron{display:grid;place-items:center;flex:0 0 40px;width:40px;height:40px;border-radius:50%;background:#ccefff;color:#0d628c;font-size:25px;font-weight:900;line-height:1;box-shadow:inset 0 0 0 1px rgba(27,130,174,.08);transition:transform .2s ease,background .2s ease}\
+#food-meals .meal-card-overview[open] .meal-overview-chevron{transform:rotate(180deg);background:#bfe8fb}\
 #food-meals .meal-card-overview-body{padding:0 12px 12px}\
 #food-meals .meal-card-overview-body button{display:block;width:100%;padding:0;border:0;background:transparent;cursor:zoom-in}\
 #food-meals .meal-card-overview-body img{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:16px;background:#fff}\
 #food-meals .meal-card-overview-body p{margin:7px 2px 0;text-align:right;color:var(--muted);font-size:11px}\
-#food-meals .meal-card-tip{display:flex;gap:9px;align-items:flex-start;margin:4px 0 12px;padding:11px 13px;border:1px dashed #e5c86e;border-radius:16px;background:#fffaf0;color:#6d5719;font-size:12px;line-height:1.5}\
 #food-meals .meal-card-grid{display:grid;grid-template-columns:1fr;gap:12px}\
 #food-meals .meal-card{position:relative;overflow:hidden;margin:0;padding:14px;border:1px solid rgba(83,137,151,.18);border-radius:20px;background:rgba(255,255,255,.94);box-shadow:0 7px 18px rgba(25,71,92,.06)}\
 #food-meals .meal-card:before,#food-meals .meal-card:after{content:"";position:absolute;border-radius:50%;pointer-events:none;opacity:.55}\
@@ -136,10 +140,10 @@ document.addEventListener('DOMContentLoaded',function(){
 #food-meals .meal-card-status.self{background:#fff0c6;color:#8a5d00;border-color:#f1d985}#food-meals .meal-card-status.hotel{background:#fbe8f3;color:#a3447a;border-color:#efc4dc}#food-meals .meal-card-status.flight{background:#e8f3fb;color:#246d9a;border-color:#c8e1f4}#food-meals .meal-card-status.booked{background:#e9f7ef;color:#237052;border-color:#c9ead8}#food-meals .meal-card-status.included{background:#ebf7f3;color:#23705f;border-color:#c8e8dd}#food-meals .meal-card-status.none{background:#f4f5f5;color:#899296;border-color:#e3e6e7}\
 #mealCardModal img{max-width:96vw;max-height:88vh;object-fit:contain}\
 @media(min-width:760px){#food-meals .meal-card-grid{grid-template-columns:1fr 1fr}}\
-@media(max-width:520px){#food-meals .meal-card-row{grid-template-columns:auto minmax(0,1fr)}#food-meals .meal-card-status{grid-column:2;justify-self:start;margin-top:-2px}}';
+@media(max-width:520px){#food-meals .meal-card-overview summary{gap:9px;padding:10px 11px}#food-meals .meal-menu-icon{flex-basis:52px;width:52px}#food-meals .meal-overview-chevron{flex-basis:38px;width:38px;height:38px}#food-meals .meal-card-row{grid-template-columns:auto minmax(0,1fr)}#food-meals .meal-card-status{grid-column:2;justify-self:start;margin-top:-2px}}';
   document.head.appendChild(css);
 
-  var old=document.getElementById('mealModal'); if(old)old.remove();
+  var old=document.getElementById('mealModal'); if(old)old.hidden=true;
   var modal=document.createElement('div'); modal.className='image-modal'; modal.id='mealCardModal'; modal.hidden=true;
   modal.innerHTML='<button class="image-modal-close" type="button" aria-label="關閉">×</button><img src="'+overviewSrc+'" alt="放大的18天每日餐食總覽">';
   document.body.appendChild(modal);
