@@ -67,6 +67,7 @@
 document.addEventListener('DOMContentLoaded',function(){
   var host=document.getElementById('food-meals');
   if(!host)return;
+  var overviewSrc='../assets/app-icons/IMG_8478.jpeg?v=20260909-8478';
   var meals=[
     {d:1,date:'9/24',place:'台北 → 維也納',b:['—','','none'],l:['—','','none'],n:['✈ 機上 CI0063','','flight']},
     {d:2,date:'9/25',place:'維也納',b:['✈ 飛機餐 CI0063','','flight'],l:['Figlmüller','維也納炸豬排','booked'],n:['自理','＋ 超市採買 🛒','self']},
@@ -95,7 +96,7 @@ document.addEventListener('DOMContentLoaded',function(){
     return '<div class="meal-card-row '+kind+'"><span class="meal-card-icon">'+icon+'</span><span class="meal-card-copy"><strong>'+name+'｜'+esc(data[0])+'</strong>'+(note?'<small>'+esc(note)+'</small>':'')+(market?'<em>🛒 超市採買</em>':'')+'</span><span class="meal-card-status '+data[2]+'">'+esc(label[data[2]])+'</span></div>';
   }
   host.innerHTML='<div class="notice"><div class="notice-icon">🍴</div><div><strong>18 天每日餐食</strong><p>上方可展開完整一覽表；下方卡牌可快速查看每日早餐、午餐、晚餐與超市採買。</p></div></div>'+
-    '<details class="meal-card-overview"><summary><span>🗓️</span><span><b>展開 18 天餐食一覽表</b><small>一次確認自理、餐廳、飯店供餐與超市採買</small></span><i>⌄</i></summary><div class="meal-card-overview-body"><button type="button" id="mealCardOverviewZoom" aria-label="放大18天每日餐食總覽"><img src="../assets/meal-overview.png" alt="18天早餐午餐晚餐總覽"></button><p>點圖可放大查看</p></div></details>'+
+    '<details class="meal-card-overview"><summary><span>🗓️</span><span><b>展開 18 天餐食一覽表</b><small>一次確認自理、餐廳、飯店供餐與超市採買</small></span><i>⌄</i></summary><div class="meal-card-overview-body"><button type="button" id="mealCardOverviewZoom" aria-label="放大18天每日餐食總覽"><img src="'+overviewSrc+'" alt="18天早餐午餐晚餐總覽"></button><p>點圖可放大查看</p></div></details>'+
     '<div class="meal-card-tip"><span>💡</span><div><b>卡牌標示</b><br>「自理」只顯示一次；有補貨行程時另外標示「🛒 超市採買」。</div></div>'+
     '<div class="meal-card-grid">'+meals.map(function(x){return '<article class="meal-card"><header><span>D'+x.d+'</span><div><b>'+esc(x.date)+'｜'+esc(x.place)+'</b>'+(x.sub?'<small>'+esc(x.sub)+'</small>':'')+'</div></header>'+row('b',x.b)+row('l',x.l)+row('n',x.n)+'</article>'}).join('')+'</div>';
 
@@ -140,7 +141,7 @@ document.addEventListener('DOMContentLoaded',function(){
 
   var old=document.getElementById('mealModal'); if(old)old.remove();
   var modal=document.createElement('div'); modal.className='image-modal'; modal.id='mealCardModal'; modal.hidden=true;
-  modal.innerHTML='<button class="image-modal-close" type="button" aria-label="關閉">×</button><img src="../assets/meal-overview.png" alt="放大的18天每日餐食總覽">';
+  modal.innerHTML='<button class="image-modal-close" type="button" aria-label="關閉">×</button><img src="'+overviewSrc+'" alt="放大的18天每日餐食總覽">';
   document.body.appendChild(modal);
   function close(){modal.hidden=true;document.body.style.overflow=''}
   document.getElementById('mealCardOverviewZoom').addEventListener('click',function(){modal.hidden=false;document.body.style.overflow='hidden'});
