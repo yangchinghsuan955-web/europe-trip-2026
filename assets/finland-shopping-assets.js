@@ -89,7 +89,7 @@ document.addEventListener('DOMContentLoaded',function(){
     {d:18,date:'10/11（日）',place:'台北',b:['—','','none'],l:['—','','none'],n:['—','','none']}
   ];
   var label={self:'自理',hotel:'飯店供餐',flight:'機上餐',booked:'已選定',included:'行程含餐',none:'—'};
-  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]})}
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
   function row(kind,data){
     var icon={b:'☀️',l:'🍽️',n:'🌙'}[kind],name={b:'早餐',l:'午餐',n:'晚餐'}[kind],note=data[1]||'',market=note.indexOf('超市採買')>=0;
     note=note.replace(/・?＋ 超市採買 🛒/g,'').replace(/＋ 超市採買 🛒/g,'').trim();
