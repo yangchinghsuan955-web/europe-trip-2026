@@ -1,10 +1,12 @@
 /*
  * Shared runtime entry point.
  *
- * Ported from chun-assistant/travel@cef482dab43f39e9fd8cee34a4b0aae102517db8.
- * Keep this file intentionally tiny; feature code lives under assets/data and assets/modules.
- * Target-repo compatibility: Stay modules are auto-loaded on data-page="hotels" so the
- * current Stay HTML can remain untouched.
+ * Keep this file intentionally tiny: the existing implementation is temporarily
+ * kept in common-legacy.js while its data/rendering responsibilities are split
+ * into assets/data and assets/modules.
+ *
+ * The legacy runtime is always loaded first and synchronously. On the daily page,
+ * Daily modules are then loaded in dependency order without changing legacy timing.
  */
 (function () {
   var current = document.currentScript;
@@ -15,18 +17,7 @@
   var printDataSrc = base + "data/print.js";
   var utilsSrc = base + "modules/common-utils.js";
   var legacySrc = base + "common-legacy.js";
-  var page = document.body && document.body.getAttribute("data-page");
-  var isDailyPage = page === "days";
-  var isStayPage = page === "hotels";
-
-  function stayScripts() {
-    return [
-      base + "data/stay.js",
-      base + "modules/stay-renderer.js",
-      base + "modules/stay.js",
-      base + "modules/stay-bootstrap.js"
-    ];
-  }
+  var isDailyPage = document.body && document.body.getAttribute("data-page") === "days";
 
   if (document.readyState === "loading" && document.write) {
     document.write('<script src="' + packingDataSrc + '"><\/script>');
@@ -41,6 +32,7 @@
       document.write('<script src="' + base + 'modules/daily-logic.js' + '"><\/script>');
       document.write('<script src="' + base + 'modules/daily-scroll.js' + '"><\/script>');
       document.write('<script src="' + base + 'modules/daily-render.js' + '"><\/script>');
+      document.write('<script src="' + base + 'modules/daily-timezone.js' + '"><\/script>');
       document.write('<script src="' + base + 'modules/daily.js' + '"><\/script>');
       document.write('<script src="' + base + 'modules/daily-event-filters.js"><\/script>');
       document.write('<script src="' + base + 'modules/runtime-utils.js"><\/script>');
@@ -48,11 +40,10 @@
       document.write('<script src="' + base + 'modules/apps-renderer.js"><\/script>');
       document.write('<script src="' + base + 'modules/apps.js"><\/script>');
       document.write('<script src="' + base + 'modules/apps-bootstrap.js"><\/script>');
-    }
-    if (isDailyPage || isStayPage) {
-      stayScripts().forEach(function (url) {
-        document.write('<script src="' + url + '"><\/script>');
-      });
+      document.write('<script src="' + base + 'data/stay.js"><\/script>');
+      document.write('<script src="' + base + 'modules/stay-renderer.js"><\/script>');
+      document.write('<script src="' + base + 'modules/stay.js"><\/script>');
+      document.write('<script src="' + base + 'modules/stay-bootstrap.js"><\/script>');
     }
     return;
   }
@@ -64,16 +55,20 @@
       base + "modules/daily-logic.js",
       base + "modules/daily-scroll.js",
       base + "modules/daily-render.js",
+      base + "modules/daily-timezone.js",
       base + "modules/daily.js",
       base + "modules/daily-event-filters.js",
       base + "modules/runtime-utils.js",
       base + "data/apps.js",
       base + "modules/apps-renderer.js",
       base + "modules/apps.js",
-      base + "modules/apps-bootstrap.js"
+      base + "modules/apps-bootstrap.js",
+      base + "data/stay.js",
+      base + "modules/stay-renderer.js",
+      base + "modules/stay.js",
+      base + "modules/stay-bootstrap.js"
     );
   }
-  if (isDailyPage || isStayPage) scripts = scripts.concat(stayScripts());
 
   var index = 0;
   function loadNext() {
