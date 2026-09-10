@@ -19,6 +19,8 @@
   var legacySrc = base + "common-legacy.js";
   var isDailyPage = document.body && document.body.getAttribute("data-page") === "days";
 
+  if (isDailyPage) window.TRAVEL_DEFER_RUNTIME_INIT = true;
+
   if (document.readyState === "loading" && document.write) {
     document.write('<script src="' + packingDataSrc + '"><\/script>');
     document.write('<script src="' + coreDataSrc + '"><\/script>');
@@ -31,6 +33,7 @@
       document.write('<script src="' + base + 'data/itinerary.js' + '"><\/script>');
       document.write('<script src="' + base + 'modules/daily-day9-overrides.js' + '"><\/script>');
       document.write('<script src="' + base + 'modules/daily-day10-overrides.js' + '"><\/script>');
+      document.write('<script src="' + base + 'modules/daily-day11-overrides.js' + '"><\/script>');
       document.write('<script src="' + base + 'modules/daily-logic.js' + '"><\/script>');
       document.write('<script src="' + base + 'modules/daily-scroll.js' + '"><\/script>');
       document.write('<script src="' + base + 'modules/daily-render.js' + '"><\/script>');
@@ -46,6 +49,7 @@
       document.write('<script src="' + base + 'modules/stay-renderer.js"><\/script>');
       document.write('<script src="' + base + 'modules/stay.js"><\/script>');
       document.write('<script src="' + base + 'modules/stay-bootstrap.js"><\/script>');
+      document.write('<script>window.TravelCommonRuntimeStart && window.TravelCommonRuntimeStart();<\/script>');
     }
     return;
   }
@@ -56,6 +60,7 @@
       base + "data/itinerary.js",
       base + "modules/daily-day9-overrides.js",
       base + "modules/daily-day10-overrides.js",
+      base + "modules/daily-day11-overrides.js",
       base + "modules/daily-logic.js",
       base + "modules/daily-scroll.js",
       base + "modules/daily-render.js",
@@ -76,7 +81,10 @@
 
   var index = 0;
   function loadNext() {
-    if (index >= scripts.length) return;
+    if (index >= scripts.length) {
+      if (isDailyPage && window.TravelCommonRuntimeStart) window.TravelCommonRuntimeStart();
+      return;
+    }
     var script = document.createElement("script");
     script.src = scripts[index++];
     script.async = false;
