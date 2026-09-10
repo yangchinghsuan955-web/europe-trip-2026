@@ -29,6 +29,7 @@
 
     if (isDailyPage) {
       document.write('<script src="' + base + 'data/itinerary.js' + '"><\/script>');
+      document.write('<script src="' + base + 'modules/daily-day9-overrides.js' + '"><\/script>');
       document.write('<script src="' + base + 'modules/daily-logic.js' + '"><\/script>');
       document.write('<script src="' + base + 'modules/daily-scroll.js' + '"><\/script>');
       document.write('<script src="' + base + 'modules/daily-render.js' + '"><\/script>');
@@ -52,6 +53,7 @@
   if (isDailyPage) {
     scripts.push(
       base + "data/itinerary.js",
+      base + "modules/daily-day9-overrides.js",
       base + "modules/daily-logic.js",
       base + "modules/daily-scroll.js",
       base + "modules/daily-render.js",
