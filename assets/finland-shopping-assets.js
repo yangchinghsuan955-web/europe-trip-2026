@@ -3,7 +3,7 @@
   var finlandData=window.TravelFinlandShoppingData;
   if(!data||!finlandData)return;
   var base='../assets/shopping/finland/';
-  var version='?v=20260912-cloudberry1';
+  var version='?v=20260912-cloudberry2';
   function local(path){return encodeURI(base+path)+version}
   var files=finlandData.files;
   function assetParts(file){

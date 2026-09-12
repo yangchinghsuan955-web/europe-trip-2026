@@ -19,10 +19,10 @@
     'Moomin 周邊／ARABIA・Iittala・Marimekko 聯名':'Moomin-Collaboration.png',
     'Lumene 保養品':'Lumene-Skincare.png',
     'Marttiini 馴鹿皮手套':'Marttiini-Reindeer-Leather-Gloves.png',
-    'Finnish Flavours Premium Lakkahillo 250g':{thumb:'Finnish-Flavours-Premium-Lakkahillo-250g.webp',large:'Finnish-Flavours-Premium-Lakkahillo-250g.avif'},
-    'Poikain Parhaat Lakkahillo 250g':{thumb:'Poikain-Parhaat-Lakkahillo-250g.webp',large:'Poikain-Parhaat-Lakkahillo-250g.avif'},
-    'Meritalo Lakkahillo 310g':{thumb:'Meritalo-Lakkahillo-310g.webp',large:'Meritalo-Lakkahillo-310g.webp'},
-    'Dronningholm Lakkahillo 340g':{thumb:'Dronningholm-Lakkahillo-340g.webp',large:'Dronningholm-Lakkahillo-340g.jpg'}
+    'Finnish Flavours Premium Lakkahillo 250g':{thumb:'Finnish-Flavours-Premium-Lakkahillo-250g.png',large:'Finnish-Flavours-Premium-Lakkahillo-250g.png'},
+    'Poikain Parhaat Lakkahillo 250g':{thumb:'Poikain-Parhaat-Lakkahillo-250g.png',large:'Poikain-Parhaat-Lakkahillo-250g.png'},
+    'Meritalo Lakkahillo 310g':{thumb:'Meritalo-Lakkahillo-310g.png',large:'Meritalo-Lakkahillo-310g.png'},
+    'Dronningholm Lakkahillo 340g':{thumb:'Dronningholm-Lakkahillo-340g.png',large:'Dronningholm-Lakkahillo-340g.png'}
   });
 
   const marketOnly = Object.freeze([
