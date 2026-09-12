@@ -19,9 +19,10 @@
     'Moomin 周邊／ARABIA・Iittala・Marimekko 聯名':'Moomin-Collaboration.png',
     'Lumene 保養品':'Lumene-Skincare.png',
     'Marttiini 馴鹿皮手套':'Marttiini-Reindeer-Leather-Gloves.png',
-    'Finnish Flavours Premium Lakkahillo 250g':'Finnish-Flavours-Premium-Lakkahillo-250g.png',
-    'Poikain Parhaat Lakkahillo 250g':'Poikain-Parhaat-Lakkahillo-250g.png',
-    'Dronningholm Lakkahillo 340g':'Dronningholm-Lakkahillo-340g.png'
+    'Finnish Flavours Premium Lakkahillo 250g':{thumb:'Finnish-Flavours-Premium-Lakkahillo-250g.webp',large:'Finnish-Flavours-Premium-Lakkahillo-250g.avif'},
+    'Poikain Parhaat Lakkahillo 250g':{thumb:'Poikain-Parhaat-Lakkahillo-250g.webp',large:'Poikain-Parhaat-Lakkahillo-250g.avif'},
+    'Meritalo Lakkahillo 310g':{thumb:'Meritalo-Lakkahillo-310g.webp',large:'Meritalo-Lakkahillo-310g.webp'},
+    'Dronningholm Lakkahillo 340g':{thumb:'Dronningholm-Lakkahillo-340g.webp',large:'Dronningholm-Lakkahillo-340g.jpg'}
   });
 
   const marketOnly = Object.freeze([
@@ -38,7 +39,7 @@
     {country:'🇫🇮 芬蘭',category:'⭐ 芬蘭代表',priority:'⭐ 必買',item:'Paulig Juhla Mokka',reason:'芬蘭經典咖啡，最能代表芬蘭日常咖啡文化，適合咖啡族或送禮。',place:'芬蘭各大超市',tag:'芬蘭咖啡'},
     {country:'🇫🇮 芬蘭',category:'🫐 雲莓果醬推薦',categoryNote:'雲莓是北歐特色莓果，酸甜有香氣，是很有代表性的芬蘭伴手禮。',priority:'⭐ 最推薦',item:'Finnish Flavours Premium Lakkahillo 250g',reason:'雲莓是北歐特色莓果，酸甜有香氣，是很有代表性的芬蘭伴手禮；此款 75% 雲莓含量，高莓果比例，列為首選。',place:'芬蘭超市／特色食品店／看到即買',tag:'75% 雲莓',source:'https://finnishflavours.com/products/finnish-flavours-suomalainen-premium-lakkahillo-250g',sourceLabel:'Finnish Flavours 官方商品頁'},
     {country:'🇫🇮 芬蘭',category:'🫐 雲莓果醬推薦',priority:'👍 高 CP 值',item:'Poikain Parhaat Lakkahillo 250g',reason:'75% 芬蘭雲莓，高莓果比例、風味濃，看到可優先入手。',place:'K-Ruoka／部分超市／特色食品店',tag:'75% 雲莓',source:'https://poikainparhaat.fi/tuote/suomalainen-lakkahillo-250g/',sourceLabel:'Poikain Parhaat 官方商品頁'},
-    {country:'🇫🇮 芬蘭',category:'🫐 雲莓果醬推薦',priority:'👍 實用款',item:'Meritalo Lakkahillo 310g',reason:'40% 芬蘭雲莓，超市較常見，實用好買。',place:'Prisma／S-market／K-Ruoka',tag:'40% 雲莓',image:'https://cdn.s-cloud.fi/v1/w720h720%40_q75/assets/dam-id/0_dpg00mKeo9JFAoRL565A.webp',imageFull:'https://cdn.s-cloud.fi/v1/w720h720%40_q75/assets/dam-id/0_dpg00mKeo9JFAoRL565A.webp',fullImage:'https://cdn.s-cloud.fi/v1/w720h720%40_q75/assets/dam-id/0_dpg00mKeo9JFAoRL565A.webp',source:'https://meritalo.com/tuote/lakkahillo-310g',sourceLabel:'Meritalo 官方商品頁'},
+    {country:'🇫🇮 芬蘭',category:'🫐 雲莓果醬推薦',priority:'👍 實用款',item:'Meritalo Lakkahillo 310g',reason:'40% 芬蘭雲莓，超市較常見，實用好買。',place:'Prisma／S-market／K-Ruoka',tag:'40% 雲莓',source:'https://meritalo.com/tuote/lakkahillo-310g',sourceLabel:'Meritalo 官方商品頁'},
     {country:'🇫🇮 芬蘭',category:'🫐 雲莓果醬推薦',priority:'👀 備選',item:'Dronningholm Lakkahillo 340g',reason:'35% 雲莓含量，經典品牌；前三款找不到時可作備選。',place:'K-Citymarket／Prisma／S-market',tag:'35% 雲莓',source:'https://www.saarioinen.fi/tuotteet/dronningholm-lakkahillo-340-g/',sourceLabel:'Dronningholm 官方商品頁'},
     {country:'🇫🇮 芬蘭',category:'🍫 Fazer 巧克力',priority:'👍 推薦',item:'Karl Fazer Dark 70%',reason:'70% 黑巧克力，甜度較低，適合不嗜甜者、長輩或自用。',place:'芬蘭各大超市／Fazer',tag:'黑巧克力'},
     {country:'🇫🇮 芬蘭',category:'🍫 Fazer 巧克力',priority:'⭐ 必買',item:'Fazer Café 巧克力',reason:'Fazer Café／Fazer 商店相關巧克力，紀念性比一般超市款更高，可優先挑限定包裝或禮盒。',place:'Fazer Café／Fazer 商店',tag:'Fazer 限定'},
