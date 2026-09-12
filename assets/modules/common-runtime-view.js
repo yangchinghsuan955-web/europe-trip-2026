@@ -22,7 +22,9 @@
     }
 
     function isNavigableEvent(event) {
-      if (!event || !event.place || isAirportPlace((event.type || "") + " " + (event.title || "") + " " + event.place)) return false;
+      if (!event || !event.place) return false;
+      if (event.navigable === true && event.navigationMap) return true;
+      if (isAirportPlace((event.type || "") + " " + (event.title || "") + " " + event.place)) return false;
       if (event.navigable === true) return true;
       var type = String(event.type || "");
       return /景點|活動/.test(type) || (/住宿/.test(type) && isHotelPlace(event.place));
