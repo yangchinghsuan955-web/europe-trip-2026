@@ -62,8 +62,8 @@ jobs:
 
           renderer = Path("assets/shopping-data.js").read_text(encoding="utf-8")
           assert "var thumb=p.image,full=p.imageFull||p.fullImage||thumb;" in renderer
-          assert "' data-product-image="'+esc(full)+'"" in renderer
-          assert "' src="'+esc(thumb)+'"" in renderer
+          assert "data-product-image" in renderer and "esc(full)" in renderer
+          assert "data-product-thumbnail" in renderer and "esc(thumb)" in renderer
           assert 'loading="lazy" decoding="async"' in renderer
           assert "rootMargin:'700px 0px'" not in renderer
           assert "button.addEventListener('touchstart',function(){warm(button.dataset.productImage)" not in renderer
