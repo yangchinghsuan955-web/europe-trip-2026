@@ -93,6 +93,7 @@
     }
 
     function renderTax() {
+      if (!$("#taxList")) return;
       $("#taxList").innerHTML = APP_DATA.tax.map(function (t) {
         return '<article class="info-card"><div class="event-top"><div><span class="event-type">退稅地區</span><h3>' + escapeHtml(t.country || "退稅步驟") + '</h3></div>' + (t.threshold ? '<span class="status neutral">門檻 ' + escapeHtml(t.threshold) + '</span>' : "") + '</div><div class="info-card-row"><span>VAT／表單</span><b>' + escapeHtml([t.vat, t.form].filter(Boolean).join(" · ") || "—") + '</b></div><div class="info-card-row"><span>本行程驗證點</span><b>' + escapeHtml(t.checkpoint || "—") + '</b></div><div class="info-card-row"><span>攜帶物品</span><b>' + escapeHtml(t.bring || "—") + '</b></div><div class="info-card-row"><span>操作</span><b>' + escapeHtml(t.action || "—") + '</b></div><div class="info-card-row"><span>避免失敗</span><b>' + escapeHtml(t.failure || "—") + '</b></div>' + (t.source && /^https?:/.test(t.source) ? '<div class="event-actions"><a class="map-btn" href="' + escapeHtml(t.source) + '" target="_blank" rel="noopener">查看官方來源</a></div>' : "") + '</article>';
       }).join("");

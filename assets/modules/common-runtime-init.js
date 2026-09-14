@@ -24,7 +24,12 @@
     var bindSegments = deps.bindSegments;
 
     function init() {
-      renderCountdown(); renderNetwork(); renderNotices(); renderDayView(); renderChecklist(); renderPractical(); renderBookings(); renderTax(); renderBudget(); renderFood(); renderMeals(); bindGuideImages();
+      renderCountdown(); renderNetwork(); renderNotices(); renderDayView(); renderChecklist(); renderPractical(); renderBookings();
+      if ($("#taxList")) renderTax();
+      if ($("#budgetSummary") && $("#budgetList")) renderBudget();
+      if ($("#foodList")) renderFood();
+      if ($("#mealList")) renderMeals();
+      bindGuideImages();
       $("#jumpToday").addEventListener("click", function () { state.day = currentTripDay(); save("aurora-day", state.day); renderDayView(); toast("已切換 Day " + state.day); });
       $("#eventSearch").addEventListener("input", function (e) { state.eventSearch = e.target.value; renderEvents(); });
       $("#clearSearch").addEventListener("click", function () { $("#eventSearch").value = ""; state.eventSearch = ""; renderEvents(); });

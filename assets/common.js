@@ -1,69 +1,33 @@
 /*
  * Shared runtime entry point.
  *
- * Keep this file intentionally tiny: the existing implementation is temporarily
- * kept in common-legacy.js while its data/rendering responsibilities are split
- * into assets/data and assets/modules.
- *
- * The legacy runtime is always loaded first and synchronously. On the daily page,
- * Daily modules are then loaded in dependency order without changing legacy timing.
+ * All dependencies are requested together and executed in their declared order.
+ * Setting async=false before inserting dynamic classic scripts preserves that
+ * order while allowing the browser to download the files in parallel.
  */
 (function () {
+  "use strict";
+
   var current = document.currentScript;
   var src = current && current.src;
   var base = src ? src.slice(0, src.lastIndexOf("/") + 1) : "";
-  var packingDataSrc = base + "data/packing.js";
-  var coreDataSrc = base + "data/core.js";
-  var printDataSrc = base + "data/print.js";
-  var utilsSrc = base + "modules/common-utils.js";
-  var legacySrc = base + "common-legacy.js";
-  var isDailyPage = document.body && document.body.getAttribute("data-page") === "days";
+  var pageName = document.body && document.body.getAttribute("data-page");
+  var isDailyPage = pageName === "days";
+  var scripts = [
+    base + "data/packing.js",
+    base + "data/core.js",
+    base + "data/print.js",
+    base + "modules/common-utils.js",
+    base + "modules/common-runtime-tools.js?v=20260915-perf2",
+    base + "modules/common-runtime-view.js",
+    base + "modules/common-runtime-init.js?v=20260915-perf2",
+    base + "modules/common-runtime-info.js",
+    base + "common-runtime.js",
+    base + "modules/flight-badges.js"
+  ];
 
-  if (isDailyPage) window.TRAVEL_DEFER_RUNTIME_INIT = true;
-
-  if (document.readyState === "loading" && document.write) {
-    document.write('<script src="' + packingDataSrc + '"><\/script>');
-    document.write('<script src="' + coreDataSrc + '"><\/script>');
-    document.write('<script src="' + printDataSrc + '"><\/script>');
-    document.write('<script src="' + utilsSrc + '"><\/script>');
-    document.write('<script src="' + legacySrc.replace(/"/g, "&quot;") + '"><\/script>');
-    document.write('<script src="' + base + 'modules/flight-badges.js' + '"><\/script>');
-
-    if (isDailyPage) {
-      document.write('<script src="' + base + 'data/itinerary.js' + '"><\/script>');
-      document.write('<script src="' + base + 'modules/daily-day1-overrides.js' + '"><\/script>');
-      document.write('<script src="' + base + 'modules/daily-day2-overrides.js' + '"><\/script>');
-      document.write('<script src="' + base + 'modules/daily-day5-overrides.js' + '"><\/script>');
-      document.write('<script src="' + base + 'modules/daily-day9-overrides.js' + '"><\/script>');
-      document.write('<script src="' + base + 'modules/daily-day10-overrides.js' + '"><\/script>');
-      document.write('<script src="' + base + 'modules/daily-day11-overrides.js' + '"><\/script>');
-      document.write('<script src="' + base + 'modules/daily-day12-overrides.js' + '"><\/script>');
-      document.write('<script src="' + base + 'modules/daily-day13-overrides.js' + '"><\/script>');
-      document.write('<script src="' + base + 'modules/daily-day15-overrides.js' + '"><\/script>');
-      document.write('<script src="' + base + 'modules/daily-day16-overrides.js' + '"><\/script>');
-      document.write('<script src="' + base + 'modules/daily-day17-overrides.js' + '"><\/script>');
-      document.write('<script src="' + base + 'modules/daily-logic.js' + '"><\/script>');
-      document.write('<script src="' + base + 'modules/daily-scroll.js' + '"><\/script>');
-      document.write('<script src="' + base + 'modules/daily-render.js' + '"><\/script>');
-      document.write('<script src="' + base + 'modules/daily-timezone.js' + '"><\/script>');
-      document.write('<script src="' + base + 'modules/daily.js' + '"><\/script>');
-      document.write('<script src="' + base + 'modules/daily-event-filters.js"><\/script>');
-      document.write('<script src="' + base + 'modules/runtime-utils.js"><\/script>');
-      document.write('<script src="' + base + 'data/apps.js"><\/script>');
-      document.write('<script src="' + base + 'modules/apps-renderer.js"><\/script>');
-      document.write('<script src="' + base + 'modules/apps.js"><\/script>');
-      document.write('<script src="' + base + 'modules/apps-bootstrap.js"><\/script>');
-      document.write('<script src="' + base + 'data/stay.js"><\/script>');
-      document.write('<script src="' + base + 'modules/stay-renderer.js"><\/script>');
-      document.write('<script src="' + base + 'modules/stay.js"><\/script>');
-      document.write('<script src="' + base + 'modules/stay-bootstrap.js"><\/script>');
-      document.write('<script>window.TravelCommonRuntimeStart && window.TravelCommonRuntimeStart();<\/script>');
-    }
-    return;
-  }
-
-  var scripts = [packingDataSrc, printDataSrc, coreDataSrc, utilsSrc, legacySrc, base + "modules/flight-badges.js"];
   if (isDailyPage) {
+    window.TRAVEL_DEFER_RUNTIME_INIT = true;
     scripts.push(
       base + "data/itinerary.js",
       base + "modules/daily-day1-overrides.js",
@@ -93,19 +57,32 @@
       base + "modules/stay.js",
       base + "modules/stay-bootstrap.js"
     );
+  } else if (pageName === "transport") {
+    scripts.push(
+      base + "data/transport.js",
+      base + "modules/transport-renderer.js",
+      base + "modules/transport-data-enhancements.js",
+      base + "modules/transport-enhancements.js",
+      base + "modules/transport-filters.js"
+    );
+  } else if (pageName === "hotels") {
+    scripts.push(
+      base + "data/stay.js",
+      base + "modules/stay-renderer.js",
+      base + "modules/stay.js",
+      base + "modules/stay-bootstrap.js"
+    );
   }
 
-  var index = 0;
-  function loadNext() {
-    if (index >= scripts.length) {
-      if (isDailyPage && window.TravelCommonRuntimeStart) window.TravelCommonRuntimeStart();
-      return;
-    }
+  scripts.forEach(function (scriptSrc, index) {
     var script = document.createElement("script");
-    script.src = scripts[index++];
+    script.src = scriptSrc;
     script.async = false;
-    script.onload = loadNext;
+    if (isDailyPage && index === scripts.length - 1) {
+      script.addEventListener("load", function () {
+        if (window.TravelCommonRuntimeStart) window.TravelCommonRuntimeStart();
+      });
+    }
     document.head.appendChild(script);
-  }
-  loadNext();
+  });
 })();
