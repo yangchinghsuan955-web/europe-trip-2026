@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded',function(){
   }
   function more(items){return items&&items.length?'<div class="meal-card-more"><b>餐廳與餐點備註</b><ul>'+items.map(function(item){return '<li>'+esc(item)+'</li>'}).join('')+'</ul></div>':''}
   function cost(items){return items&&items.length?'<div class="meal-card-budget"><span>每人餐費</span><span class="meal-card-costs">'+items.map(function(item){return '<span class="meal-card-cost '+item[2]+'">'+esc(item[0])+' <b>'+esc(item[1])+'</b></span>'}).join('')+'</span></div>':''}
-  host.innerHTML='<details class="meal-card-overview"><summary><span class="meal-menu-icon" aria-hidden="true"><span class="meal-menu-rings"></span><span class="meal-menu-sheet"><b>Menu</b><i>🍴</i></span><span class="meal-menu-leaf left"></span><span class="meal-menu-leaf right"></span></span><span class="meal-overview-copy"><b>展開 18 天餐食一覽表</b><small>一次確認自理、餐廳、飯店供餐與超市採買</small></span><span class="meal-overview-action" aria-hidden="true"><span class="meal-overview-action-text open">展開查看</span><span class="meal-overview-action-text close">收合內容</span><span class="meal-overview-action-arrow">⌄</span></span></summary><div class="meal-card-overview-body"><button type="button" id="mealCardOverviewZoom" aria-label="放大18天每日餐食總覽"><img src="'+overviewSrc+'" alt="18天早餐午餐晚餐總覽"></button><p>點圖可放大查看</p></div></details>'+
+  host.innerHTML='<details class="meal-card-overview"><summary><span class="meal-menu-icon" aria-hidden="true"><span class="meal-menu-rings"></span><span class="meal-menu-sheet"><b>Menu</b><i>🍴</i></span><span class="meal-menu-leaf left"></span><span class="meal-menu-leaf right"></span></span><span class="meal-overview-copy"><b>展開 18 天餐食一覽表</b><small>一次確認自理、餐廳、飯店供餐與超市採買</small></span><span class="meal-overview-action" aria-hidden="true"><span class="meal-overview-action-text open">展開查看</span><span class="meal-overview-action-text close">收合內容</span><span class="meal-overview-action-arrow">⌄</span></span></summary><div class="meal-card-overview-body"><button type="button" id="mealCardOverviewZoom" aria-label="放大18天每日餐食總覽"><img data-src="'+overviewSrc+'" alt="18天早餐午餐晚餐總覽" loading="lazy" decoding="async"></button><p>點圖可放大查看</p></div></details>'+
     '<div class="meal-card-summary"><div class="meal-card-counts"><span class="included">已含餐 20餐</span><span class="booked">已選餐廳 12餐</span><span class="self">須自理 17餐</span></div><span class="meal-card-total"><span>已排定餐費</span><b>每人 NT$15,787～16,817</b><small>6人 NT$94,722～100,902・自理及湯品另計</small></span></div>'+
     '<div class="meal-card-grid">'+meals.map(function(x){return '<article class="meal-card"><header><span>D'+x.d+'</span><div><b>'+esc(x.date)+'｜'+esc(x.place)+'</b>'+(x.sub?'<small>'+esc(x.sub)+'</small>':'')+'</div></header>'+row('b',x.b)+row('l',x.l)+row('n',x.n)+more(x.more)+cost(x.cost)+'</article>'}).join('')+'</div>';
 
@@ -99,10 +99,14 @@ document.addEventListener('DOMContentLoaded',function(){
 
   var old=document.getElementById('mealModal'); if(old)old.hidden=true;
   var modal=document.createElement('div'); modal.className='image-modal'; modal.id='mealCardModal'; modal.hidden=true;
-  modal.innerHTML='<button class="image-modal-close" type="button" aria-label="關閉">×</button><img src="'+overviewSrc+'" alt="放大的18天每日餐食總覽">';
+  modal.innerHTML='<button class="image-modal-close" type="button" aria-label="關閉">×</button><img data-src="'+overviewSrc+'" alt="放大的18天每日餐食總覽" decoding="async">';
   document.body.appendChild(modal);
   function close(){modal.hidden=true;document.body.style.overflow=''}
-  document.getElementById('mealCardOverviewZoom').addEventListener('click',function(){modal.hidden=false;document.body.style.overflow='hidden'});
+  var overviewDetails=host.querySelector('.meal-card-overview');
+  var overviewImage=host.querySelector('#mealCardOverviewZoom img');
+  function loadImage(img){if(img&&!img.getAttribute('src'))img.src=img.dataset.src||''}
+  if(overviewDetails)overviewDetails.addEventListener('toggle',function(){if(overviewDetails.open)loadImage(overviewImage)});
+  document.getElementById('mealCardOverviewZoom').addEventListener('click',function(){var modalImage=modal.querySelector('img');loadImage(modalImage);modal.hidden=false;document.body.style.overflow='hidden'});
   modal.querySelector('.image-modal-close').addEventListener('click',close);
   modal.addEventListener('click',function(e){if(e.target===modal)close()});
   document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!modal.hidden)close()});
