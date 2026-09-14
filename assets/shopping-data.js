@@ -210,7 +210,7 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 
-/* Consistent product image preview: near-viewport preload and explicit loading state. */
+/* Product image preview: load full-size images on click; desktop hover may warm the selected image. */
 document.addEventListener('DOMContentLoaded',function(){
   var modal=document.getElementById('productImageModal');
   if(!modal)return;
@@ -254,19 +254,8 @@ document.addEventListener('DOMContentLoaded',function(){
   }
 
   var buttons=Array.prototype.slice.call(document.querySelectorAll('[data-product-image]'));
-  if('IntersectionObserver' in window){
-    var observer=new IntersectionObserver(function(entries){
-      entries.forEach(function(entry){
-        if(!entry.isIntersecting)return;
-        warm(entry.target.dataset.productImage);
-        observer.unobserve(entry.target);
-      });
-    },{rootMargin:'700px 0px'});
-    buttons.forEach(function(button){observer.observe(button)});
-  }
   buttons.forEach(function(button){
-    button.addEventListener('pointerenter',function(){warm(button.dataset.productImage)},{passive:true});
-    button.addEventListener('touchstart',function(){warm(button.dataset.productImage)},{passive:true});
+    button.addEventListener('pointerenter',function(){warm(button.dataset.productImage)},{passive:true,once:true});
   });
 
   document.addEventListener('click',function(event){
