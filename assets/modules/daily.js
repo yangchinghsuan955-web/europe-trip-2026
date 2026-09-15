@@ -110,13 +110,26 @@
   else mountScrollRenderer();
 })(window);
 
-/* Load offline controls outside the critical Daily renderer. */
+/* Load offline controls without entering the Daily critical render path. */
 (function () {
   var source = document.currentScript;
-  if (!source || !source.src || window.TravelOfflineManagerRequested) return;
-  window.TravelOfflineManagerRequested = true;
-  var script = document.createElement("script");
-  script.src = new URL("../offline-manager.js?v=20260915-offline2", source.src).href;
-  script.async = true;
-  document.head.appendChild(script);
+  if (!source || !source.src) return;
+
+  function loadOfflineManager() {
+    if (window.TravelOfflineManagerRequested) return;
+    window.TravelOfflineManagerRequested = true;
+    var script = document.createElement("script");
+    script.src = new URL("../offline-manager.js?v=20260915-offline3", source.src).href;
+    script.async = true;
+    try { script.fetchPriority = "low"; } catch (_) {}
+    document.head.appendChild(script);
+  }
+
+  if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+    loadOfflineManager();
+  } else if (document.readyState === "complete") {
+    setTimeout(loadOfflineManager, 0);
+  } else {
+    window.addEventListener("load", loadOfflineManager, { once: true });
+  }
 })();
