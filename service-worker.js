@@ -49,6 +49,7 @@ const DOCUMENT_BASES = [
 
 const ASSET_EXT_RE = /\.(?:html?|js|css|json|webmanifest|png|jpe?g|webp|avif|svg)(?:[?#].*)?$/i;
 const TEXT_TYPE_RE = /(?:text\/|javascript|json|xml|css|manifest)/i;
+const SHOPPING_RASTER_RE = /\.(?:png|jpe?g|webp|avif)$/i;
 
 self.addEventListener("install", event => {
   event.waitUntil(self.skipWaiting());
@@ -71,7 +72,11 @@ function canonical(urlLike) {
 function isHighResAsset(urlLike) {
   try {
     const url = canonical(urlLike);
-    return /\/assets\/shopping\/.*\/large\//i.test(url.pathname);
+    const pathname = url.pathname;
+    if (!SHOPPING_RASTER_RE.test(pathname)) return false;
+    if (/\/assets\/shopping\/optimized\/thumbs\//i.test(pathname)) return false;
+    if (/\/assets\/shopping\/[^/]+\/thumbs\//i.test(pathname)) return false;
+    return /\/assets\/shopping\/(?:amsterdam|norway|vienna|finland)\//i.test(pathname);
   } catch (_) {
     return false;
   }
@@ -157,6 +162,17 @@ function discoverUrls(text, responseUrl, includeHighRes) {
       if (filename.includes("/") || filename.includes("?")) continue;
       addCandidate(found, "assets/shopping/finland/thumbs/" + filename, ROOT, includeHighRes);
       if (includeHighRes) addCandidate(found, "assets/shopping/finland/large/" + filename, ROOT, true);
+    }
+  }
+
+  // Vienna also assembles dedicated thumb/large paths from bare filenames.
+  if (/\/assets\/vienna-shopping-assets\.js$/i.test(base.pathname)) {
+    const filenameRe = /["']([^"'\n\r]+\.(?:png|jpe?g|webp|avif))["']/gi;
+    while ((match = filenameRe.exec(text))) {
+      const filename = match[1];
+      if (filename.includes("/") || filename.includes("?")) continue;
+      addCandidate(found, "assets/shopping/vienna/thumbs/" + filename, ROOT, includeHighRes);
+      if (includeHighRes) addCandidate(found, "assets/shopping/vienna/large/" + filename, ROOT, true);
     }
   }
 
@@ -372,7 +388,7 @@ self.addEventListener("fetch", event => {
 
     try {
       const response = await fetch(request);
-      if (response && response.ok) {
+      if (response && response.ok && (info.meta.highRes || !isHighResAsset(url))) {
         try { await cache.put(request, response.clone()); } catch (_) {}
       }
       return response;
