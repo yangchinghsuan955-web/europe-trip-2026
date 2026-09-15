@@ -1,10 +1,10 @@
 /* Aurora Trip offline package service worker. */
 "use strict";
 
-const OFFLINE_CACHE = "aurora-trip-offline-v2";
-const LEGACY_CACHES = ["aurora-trip-offline-v1"];
+const OFFLINE_CACHE = "aurora-trip-offline-v3";
+const LEGACY_CACHES = ["aurora-trip-offline-v2", "aurora-trip-offline-v1"];
 const META_URL = new URL("__offline_meta__", self.registration.scope).href;
-const VERSION = "20260915-offline2";
+const VERSION = "20260915-offline3";
 const ROOT = new URL("./", self.registration.scope);
 const CONCURRENCY = 5;
 
@@ -33,20 +33,6 @@ const SEEDS = [
   "assets/offline-manager.js"
 ];
 
-const DOCUMENT_BASES = [
-  "",
-  "daily/",
-  "transport/",
-  "stay/",
-  "budget/",
-  "prep-tools/",
-  "prep-tools/apps/",
-  "prep-tools/apps/transport/",
-  "prep-tools/apps/aurora/",
-  "prep-tools/apps/tax/",
-  "prep-tools/apps/tools/"
-].map(path => new URL(path, ROOT));
-
 const ASSET_EXT_RE = /\.(?:html?|js|css|json|webmanifest|png|jpe?g|webp|avif|svg)(?:[?#].*)?$/i;
 const TEXT_TYPE_RE = /(?:text\/|javascript|json|xml|css|manifest)/i;
 const SHOPPING_RASTER_RE = /\.(?:png|jpe?g|webp|avif)$/i;
@@ -56,7 +42,12 @@ self.addEventListener("install", event => {
 });
 
 self.addEventListener("activate", event => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil((async () => {
+    if (self.registration.navigationPreload) {
+      try { await self.registration.navigationPreload.enable(); } catch (_) {}
+    }
+    await self.clients.claim();
+  })());
 });
 
 function sameScope(url) {
@@ -131,30 +122,36 @@ function addCandidate(target, raw, base, includeHighRes) {
   } catch (_) {}
 }
 
+function addJavaScriptCandidate(target, raw, base, includeHighRes) {
+  if (/^(?:\.\.\/)+assets\//i.test(raw)) {
+    addCandidate(target, raw.replace(/^(?:\.\.\/)+/i, ""), ROOT, includeHighRes);
+    return;
+  }
+  if (/^assets\//i.test(raw)) {
+    addCandidate(target, raw, ROOT, includeHighRes);
+    return;
+  }
+  addCandidate(target, raw, base, includeHighRes);
+}
+
 function discoverUrls(text, responseUrl, includeHighRes) {
   const found = new Set();
   const base = canonical(responseUrl);
-  const raws = new Set();
+  const isJavaScript = /\.js$/i.test(base.pathname);
   let match;
 
   const attrRe = /(?:src|href)\s*=\s*["']([^"'#]+)["']/gi;
-  while ((match = attrRe.exec(text))) raws.add(match[1]);
+  while ((match = attrRe.exec(text))) addCandidate(found, match[1], base, includeHighRes);
 
   const cssRe = /url\(\s*["']?([^"')]+)["']?\s*\)/gi;
-  while ((match = cssRe.exec(text))) raws.add(match[1]);
+  while ((match = cssRe.exec(text))) addCandidate(found, match[1], base, includeHighRes);
 
   const quotedAssetRe = /["'`]([^"'`\n\r]{1,320}\.(?:html?|js|css|json|webmanifest|png|jpe?g|webp|avif|svg)(?:\?[^"'`\s]*)?)["'`]/gi;
-  while ((match = quotedAssetRe.exec(text))) raws.add(match[1]);
+  while ((match = quotedAssetRe.exec(text))) {
+    if (isJavaScript) addJavaScriptCandidate(found, match[1], base, includeHighRes);
+    else addCandidate(found, match[1], base, includeHighRes);
+  }
 
-  const isJavaScript = /\.js$/i.test(base.pathname);
-  raws.forEach(raw => {
-    addCandidate(found, raw, base, includeHighRes);
-    if (isJavaScript && !/^(?:https?:)?\/\//i.test(raw) && !raw.startsWith("/")) {
-      DOCUMENT_BASES.forEach(docBase => addCandidate(found, raw, docBase, includeHighRes));
-    }
-  });
-
-  // Finland shopping image filenames are combined dynamically at runtime.
   if (/\/assets\/modules\/shopping\/finland-shopping-data\.js$/i.test(base.pathname)) {
     const filenameRe = /["']([^"'\n\r]+\.(?:png|jpe?g|webp|avif))["']/gi;
     while ((match = filenameRe.exec(text))) {
@@ -165,7 +162,6 @@ function discoverUrls(text, responseUrl, includeHighRes) {
     }
   }
 
-  // Vienna also assembles dedicated thumb/large paths from bare filenames.
   if (/\/assets\/vienna-shopping-assets\.js$/i.test(base.pathname)) {
     const filenameRe = /["']([^"'\n\r]+\.(?:png|jpe?g|webp|avif))["']/gi;
     while ((match = filenameRe.exec(text))) {
@@ -232,9 +228,6 @@ async function pruneHighRes(cache) {
 async function downloadOfflinePack(options) {
   const includeHighRes = Boolean(options && options.includeHighRes);
   const cache = await caches.open(OFFLINE_CACHE);
-
-  // Keep the last successful ready marker while refreshing. If a refresh fails,
-  // the previous offline package remains usable instead of being invalidated.
   const queue = SEEDS.map(path => new URL(path, ROOT).href);
   const seedSet = new Set(queue);
   const queued = new Set(queue);
@@ -244,15 +237,7 @@ async function downloadOfflinePack(options) {
   let failed = 0;
   let bytes = 0;
 
-  await broadcast({
-    type: "OFFLINE_PROGRESS",
-    phase: "start",
-    processed: 0,
-    completed: 0,
-    total: queued.size,
-    bytes: 0,
-    includeHighRes
-  });
+  await broadcast({ type: "OFFLINE_PROGRESS", phase: "start", processed: 0, completed: 0, total: queued.size, bytes: 0, includeHighRes });
 
   while (queue.length) {
     const batch = [];
@@ -265,13 +250,11 @@ async function downloadOfflinePack(options) {
     if (!batch.length) continue;
 
     let fatalError = null;
-
     await Promise.all(batch.map(async href => {
       try {
         const result = await fetchAndCache(cache, href);
         completed += 1;
         bytes += result.bytes || 0;
-
         const response = result.response;
         const contentType = response.headers.get("content-type") || "";
         const pathname = new URL(href).pathname;
@@ -288,29 +271,14 @@ async function downloadOfflinePack(options) {
           }
         }
       } catch (error) {
-        // 404/HTTP misses can come from conservative URL discovery. A real
-        // network failure or Cache Storage write failure must stop the download.
-        if (error && (error.cacheWriteFailed || !error.httpStatus)) {
-          fatalError = fatalError || error;
-        } else if (seedSet.has(href)) {
-          failed += 1;
-        }
+        if (error && (error.cacheWriteFailed || !error.httpStatus)) fatalError = fatalError || error;
+        else if (seedSet.has(href)) failed += 1;
       } finally {
         processed += 1;
       }
     }));
 
-    await broadcast({
-      type: "OFFLINE_PROGRESS",
-      phase: "download",
-      processed,
-      completed,
-      failed,
-      total: queued.size,
-      bytes,
-      includeHighRes
-    });
-
+    await broadcast({ type: "OFFLINE_PROGRESS", phase: "download", processed, completed, failed, total: queued.size, bytes, includeHighRes });
     if (fatalError) throw fatalError;
   }
 
@@ -328,25 +296,14 @@ async function downloadOfflinePack(options) {
   };
   await writeMeta(cache, meta);
 
-  // The v2 package replaces v1 only after v2 has been verified and marked ready.
   await Promise.all(LEGACY_CACHES.map(name => caches.delete(name)));
-
   await broadcast({ type: "OFFLINE_PROGRESS", phase: "done", ...meta });
   return meta;
 }
 
 async function clearOfflinePack() {
   await Promise.all([OFFLINE_CACHE].concat(LEGACY_CACHES).map(name => caches.delete(name)));
-  return {
-    ready: false,
-    version: null,
-    downloadedAt: null,
-    count: 0,
-    failed: 0,
-    bytes: 0,
-    highRes: false,
-    outdated: false
-  };
+  return { ready: false, version: null, downloadedAt: null, count: 0, failed: 0, bytes: 0, highRes: false, outdated: false };
 }
 
 self.addEventListener("message", event => {
@@ -374,32 +331,26 @@ self.addEventListener("message", event => {
   }
 });
 
+/* Online browsing stays network-native; Cache Storage is touched only after a network failure. */
 self.addEventListener("fetch", event => {
   const request = event.request;
   if (request.method !== "GET") return;
-
   const url = new URL(request.url);
   if (!sameScope(url)) return;
 
-  event.respondWith((async () => {
-    const info = await readyCacheInfo();
-    if (!info) return fetch(request);
-    const cache = info.cache;
+  const networkRequest = request.mode === "navigate" && event.preloadResponse
+    ? event.preloadResponse.then(response => response || fetch(request))
+    : fetch(request);
 
-    try {
-      const response = await fetch(request);
-      if (response && response.ok && (info.meta.highRes || !isHighResAsset(url))) {
-        try { await cache.put(request, response.clone()); } catch (_) {}
-      }
-      return response;
-    } catch (error) {
-      const cached = await cache.match(request, { ignoreSearch: true });
-      if (cached) return cached;
-      if (request.mode === "navigate") {
-        const fallback = await cache.match(new Request(new URL("daily/", ROOT).href), { ignoreSearch: true });
-        if (fallback) return fallback;
-      }
-      throw error;
+  event.respondWith(networkRequest.catch(async error => {
+    const info = await readyCacheInfo();
+    if (!info) throw error;
+    const cached = await info.cache.match(request, { ignoreSearch: true });
+    if (cached) return cached;
+    if (request.mode === "navigate") {
+      const fallback = await info.cache.match(new Request(new URL("daily/", ROOT).href), { ignoreSearch: true });
+      if (fallback) return fallback;
     }
-  })());
+    throw error;
+  }));
 });
