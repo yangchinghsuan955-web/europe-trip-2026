@@ -145,8 +145,17 @@ async function broadcast(message) {
 async function fetchAndCache(cache, href) {
   const request = new Request(href, { credentials: "same-origin", cache: "reload" });
   const response = await fetch(request);
-  if (!response.ok) throw new Error("HTTP " + response.status + " " + href);
-  await cache.put(request, response.clone());
+  if (!response.ok) {
+    const error = new Error("HTTP " + response.status + " " + href);
+    error.httpStatus = response.status;
+    throw error;
+  }
+  try {
+    await cache.put(request, response.clone());
+  } catch (error) {
+    error.cacheWriteFailed = true;
+    throw error;
+  }
   return response;
 }
 
@@ -195,7 +204,10 @@ async function downloadOfflinePack() {
           });
         }
       }
-    } catch (_) {
+    } catch (error) {
+      // 404/HTTP misses can come from conservative URL discovery. A real
+      // network failure or Cache Storage write failure must stop the download.
+      if (error && (error.cacheWriteFailed || !error.httpStatus)) throw error;
       if (seedSet.has(href)) failed += 1;
     }
 
