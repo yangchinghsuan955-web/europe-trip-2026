@@ -7,7 +7,10 @@
   var current = document.currentScript;
   var scriptUrl = current && current.src ? new URL(current.src) : new URL("assets/offline-manager.js", document.baseURI);
   var rootUrl = new URL("../", scriptUrl);
-  var swUrl = new URL("service-worker.js?v=20260915-offline2", rootUrl);
+  var swUrl = new URL("service-worker.js?v=20260915-offline3", rootUrl);
+  var version = "20260915-offline3";
+  var cacheNames = ["aurora-trip-offline-v3", "aurora-trip-offline-v2", "aurora-trip-offline-v1"];
+  var metaUrl = new URL("__offline_meta__", rootUrl).href;
   var badge = document.getElementById("networkBadge");
   var state = {
     ready: false,
@@ -56,12 +59,7 @@
   function formatDate(value) {
     if (!value) return "";
     try {
-      return new Intl.DateTimeFormat("zh-TW", {
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit"
-      }).format(new Date(value));
+      return new Intl.DateTimeFormat("zh-TW", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(value));
     } catch (_) { return ""; }
   }
 
@@ -72,6 +70,40 @@
     return (bytes / (1024 * 1024)).toFixed(bytes < 10 * 1024 * 1024 ? 1 : 0) + " MB";
   }
 
+  function emptyStatus() {
+    return { ready: false, version: null, downloadedAt: null, count: 0, failed: 0, bytes: 0, highRes: false, outdated: false };
+  }
+
+  async function readLocalStatus() {
+    for (var i = 0; i < cacheNames.length; i += 1) {
+      var name = cacheNames[i];
+      if (!(await caches.has(name))) continue;
+      var cache = await caches.open(name);
+      var response = await cache.match(metaUrl);
+      if (!response) continue;
+      try {
+        var meta = await response.json();
+        if (!meta || !meta.ready) continue;
+        return {
+          ready: true,
+          version: meta.version || null,
+          downloadedAt: meta.downloadedAt || null,
+          count: meta.count || 0,
+          failed: meta.failed || 0,
+          bytes: meta.bytes || 0,
+          highRes: Boolean(meta.highRes),
+          outdated: meta.version !== version
+        };
+      } catch (_) {}
+    }
+    return emptyStatus();
+  }
+
+  async function clearLocalCaches() {
+    await Promise.all(cacheNames.map(function (name) { return caches.delete(name); }));
+    return emptyStatus();
+  }
+
   function ensurePanel() {
     if (panel) return panel;
     style();
@@ -79,12 +111,12 @@
     panel.className = "offline-manager-backdrop";
     panel.hidden = true;
     panel.innerHTML = '<section class="offline-manager-card" role="dialog" aria-modal="true" aria-labelledby="offlineManagerTitle">' +
-      '<div class="offline-manager-head"><div><h2 id="offlineManagerTitle">📥 離線旅行資料</h2><p>基本包保存五個主頁籤、本機旅行資料與必要圖片；商品高清原圖改為選配。</p></div><button class="offline-manager-close" type="button" aria-label="關閉">×</button></div>' +
+      '<div class="offline-manager-head"><div><h2 id="offlineManagerTitle">📥 離線旅行資料</h2><p>只有按下載時才建立離線包；平常線上瀏覽維持原本效能。</p></div><button class="offline-manager-close" type="button" aria-label="關閉">×</button></div>' +
       '<div class="offline-manager-status" id="offlineManagerStatus">正在檢查…</div>' +
       '<p class="offline-manager-detail" id="offlineManagerDetail"></p>' +
       '<label class="offline-manager-option"><input id="offlineManagerHighRes" type="checkbox"><span><b>同時下載商品高清圖片</b>選配；離線時可放大查看商品原圖，但會增加手機容量與下載時間。</span></label>' +
       '<div class="offline-manager-actions"><button class="offline-manager-btn primary" id="offlineManagerPrimary" type="button">下載基本離線資料</button><button class="offline-manager-btn secondary" id="offlineManagerClear" type="button">清除</button></div>' +
-      '<p class="offline-manager-note">Google Maps／My Maps、即時天氣、極光預報、航空公司與購票網站仍需要網路。下載只保存本站內容，不會快取外部網站。</p>' +
+      '<p class="offline-manager-note">Google Maps／My Maps、即時天氣、極光預報、航空公司與購票網站仍需要網路。線上瀏覽不會把每次圖片與頁面請求重寫進離線快取。</p>' +
       '</section>';
     document.body.appendChild(panel);
     statusLine = panel.querySelector("#offlineManagerStatus");
@@ -96,15 +128,14 @@
     panel.addEventListener("click", function (event) { if (event.target === panel) closePanel(); });
     primaryButton.addEventListener("click", download);
     clearButton.addEventListener("click", clear);
-    document.addEventListener("keydown", function (event) {
-      if (event.key === "Escape" && !panel.hidden) closePanel();
-    });
+    highResInput.addEventListener("change", render);
+    document.addEventListener("keydown", function (event) { if (event.key === "Escape" && !panel.hidden) closePanel(); });
     return panel;
   }
 
   function openPanel() {
     ensurePanel().hidden = false;
-    render();
+    readLocalStatus().then(applyStatus).catch(render);
   }
 
   function closePanel() {
@@ -131,7 +162,7 @@
 
     if (state.busy) {
       statusLine.textContent = "⬇️ 正在下載離線旅行資料…";
-      detailLine.textContent = state.progress || "請保持此頁開啟；新版會同時下載最多 5 個資源以縮短等待時間。";
+      detailLine.textContent = state.progress || "請保持此頁開啟；下載器最多同時處理 5 個資源。";
     } else if (state.ready) {
       statusLine.textContent = state.outdated ? "⬆️ 離線資料有新版可更新" : "✅ 離線旅行資料已準備";
       var parts = [];
@@ -145,40 +176,15 @@
     } else {
       statusLine.textContent = navigator.onLine ? "尚未下載完整離線資料" : "目前沒有完整離線包";
       detailLine.textContent = navigator.onLine
-        ? "基本包不下載商品高清原圖，容量較小；需要離線放大商品照片時再勾選高清圖片。"
+        ? "尚未啟用離線模式；目前網站完全沿用原本線上載入與圖片效能架構。"
         : "請恢復網路後下載離線旅行資料。";
     }
 
     if (state.ready) primaryButton.textContent = state.outdated ? "更新離線資料" : "重新下載／更新";
     else primaryButton.textContent = highResInput && highResInput.checked ? "下載完整離線資料" : "下載基本離線資料";
-
     primaryButton.disabled = state.busy || !navigator.onLine;
     clearButton.disabled = state.busy || !state.ready;
     if (highResInput) highResInput.disabled = state.busy || !navigator.onLine;
-  }
-
-  function workerFor(registration) {
-    return navigator.serviceWorker.controller || registration.active || registration.waiting || registration.installing;
-  }
-
-  function send(type, payload) {
-    return navigator.serviceWorker.ready.then(function (registration) {
-      return new Promise(function (resolve, reject) {
-        var worker = workerFor(registration);
-        if (!worker) return reject(new Error("Service Worker 尚未啟動"));
-        var channel = new MessageChannel();
-        var timer = setTimeout(function () { reject(new Error("離線服務回應逾時")); }, 600000);
-        channel.port1.onmessage = function (event) {
-          clearTimeout(timer);
-          var result = event.data || {};
-          if (result.ok) resolve(result.status || {});
-          else reject(new Error(result.error || "離線服務操作失敗"));
-        };
-        var message = { type: type };
-        Object.keys(payload || {}).forEach(function (key) { message[key] = payload[key]; });
-        worker.postMessage(message, [channel.port2]);
-      });
-    });
   }
 
   function applyStatus(status) {
@@ -193,18 +199,71 @@
     render();
   }
 
-  function refreshStatus() {
-    return send("OFFLINE_STATUS").then(applyStatus).catch(function () { render(); });
+  function waitForActivated(registration) {
+    return new Promise(function (resolve, reject) {
+      var worker = registration.installing || registration.waiting || registration.active;
+      if (!worker) return reject(new Error("Service Worker 尚未建立"));
+      if (worker.state === "activated") return resolve(worker);
+      var timer = setTimeout(function () { reject(new Error("離線服務啟動逾時")); }, 15000);
+      worker.addEventListener("statechange", function onStateChange() {
+        if (worker.state === "activated") {
+          clearTimeout(timer);
+          worker.removeEventListener("statechange", onStateChange);
+          resolve(worker);
+        } else if (worker.state === "redundant") {
+          clearTimeout(timer);
+          worker.removeEventListener("statechange", onStateChange);
+          reject(new Error("離線服務啟動失敗"));
+        }
+      });
+    });
+  }
+
+  function ensureWorker() {
+    return navigator.serviceWorker.register(swUrl.href, { scope: rootUrl.pathname }).then(function (registration) {
+      return waitForActivated(registration).then(function () { return registration; });
+    });
+  }
+
+  function sendToRegistration(registration, type, payload) {
+    return new Promise(function (resolve, reject) {
+      var worker = registration.active || registration.waiting || registration.installing;
+      if (!worker) return reject(new Error("Service Worker 尚未啟動"));
+      var channel = new MessageChannel();
+      var timer = setTimeout(function () { reject(new Error("離線服務回應逾時")); }, 600000);
+      channel.port1.onmessage = function (event) {
+        clearTimeout(timer);
+        var result = event.data || {};
+        if (result.ok) resolve(result.status || {});
+        else reject(new Error(result.error || "離線服務操作失敗"));
+      };
+      var message = { type: type };
+      Object.keys(payload || {}).forEach(function (key) { message[key] = payload[key]; });
+      worker.postMessage(message, [channel.port2]);
+    });
+  }
+
+  async function migrateLegacyWorker() {
+    var registration;
+    try { registration = await navigator.serviceWorker.getRegistration(rootUrl.href); } catch (_) { return; }
+    if (!registration) return;
+
+    var status = await readLocalStatus().catch(emptyStatus);
+    try {
+      var updated = await ensureWorker();
+      if (!status.ready) {
+        await clearLocalCaches();
+        await updated.unregister();
+      }
+    } catch (_) {
+      // Preserve a working legacy package if migration itself fails.
+    }
   }
 
   function showDownloadError(error) {
     state.busy = false;
     state.progress = "";
-    return send("OFFLINE_STATUS").then(function (status) {
-      applyStatus(status);
-    }).catch(function () {
-      render();
-    }).then(function () {
+    return readLocalStatus().then(applyStatus).catch(render).then(function () {
       if (!panel) return;
       statusLine.textContent = state.ready ? "⚠️ 離線資料更新未完成" : "⚠️ 離線資料下載未完成";
       detailLine.textContent = error.message + (state.ready
@@ -219,20 +278,30 @@
     state.busy = true;
     state.progress = "準備下載…";
     render();
-    send("DOWNLOAD_OFFLINE", { includeHighRes: Boolean(highResInput && highResInput.checked) }).then(function (status) {
-      state.busy = false;
-      state.progress = "";
-      applyStatus(status);
-    }).catch(showDownloadError);
+    ensureWorker()
+      .then(function (registration) {
+        return sendToRegistration(registration, "DOWNLOAD_OFFLINE", { includeHighRes: Boolean(highResInput && highResInput.checked) });
+      })
+      .then(function (status) {
+        state.busy = false;
+        state.progress = "";
+        applyStatus(status);
+      })
+      .catch(showDownloadError);
   }
 
   function clear() {
     if (state.busy || !state.ready) return;
     state.busy = true;
     render();
-    send("CLEAR_OFFLINE").then(function (status) {
+    Promise.all([
+      clearLocalCaches(),
+      navigator.serviceWorker.getRegistration(rootUrl.href).then(function (registration) {
+        return registration ? registration.unregister() : false;
+      }).catch(function () { return false; })
+    ]).then(function (results) {
       state.busy = false;
-      applyStatus(status);
+      applyStatus(results[0]);
       if (highResInput) highResInput.checked = false;
     }).catch(function (error) {
       state.busy = false;
@@ -270,23 +339,13 @@
 
   window.addEventListener("online", function () { setTimeout(render, 0); });
   window.addEventListener("offline", function () { setTimeout(render, 0); });
-  document.addEventListener("DOMContentLoaded", function () {
+
+  function initialize() {
     bindBadge();
-    setTimeout(renderBadge, 0);
-  });
+    readLocalStatus().then(applyStatus).catch(render);
+    migrateLegacyWorker();
+  }
 
-  navigator.serviceWorker.addEventListener("controllerchange", function () {
-    setTimeout(refreshStatus, 50);
-  });
-
-  navigator.serviceWorker.register(swUrl.href, { scope: rootUrl.pathname })
-    .then(function (registration) {
-      bindBadge();
-      try { registration.update(); } catch (_) {}
-      return refreshStatus();
-    })
-    .catch(function () {
-      bindBadge();
-      render();
-    });
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initialize, { once: true });
+  else initialize();
 })();
