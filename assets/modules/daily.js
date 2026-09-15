@@ -116,7 +116,7 @@
   if (!source || !source.src || window.TravelOfflineManagerRequested) return;
   window.TravelOfflineManagerRequested = true;
   var script = document.createElement("script");
-  script.src = new URL("../offline-manager.js?v=20260915-offline1", source.src).href;
+  script.src = new URL("../offline-manager.js?v=20260915-offline2", source.src).href;
   script.async = true;
   document.head.appendChild(script);
 })();
