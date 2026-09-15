@@ -161,8 +161,9 @@ async function verifyCritical(cache) {
 
 async function downloadOfflinePack() {
   const cache = await caches.open(OFFLINE_CACHE);
-  await cache.delete(META_URL);
 
+  // Keep the last successful ready marker while refreshing. If a refresh fails,
+  // the previous offline package remains usable instead of being invalidated.
   const queue = SEEDS.map(path => new URL(path, ROOT).href);
   const seedSet = new Set(queue);
   const queued = new Set(queue);
