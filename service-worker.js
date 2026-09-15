@@ -1,10 +1,12 @@
 /* Aurora Trip offline package service worker. */
 "use strict";
 
-const OFFLINE_CACHE = "aurora-trip-offline-v1";
+const OFFLINE_CACHE = "aurora-trip-offline-v2";
+const LEGACY_CACHES = ["aurora-trip-offline-v1"];
 const META_URL = new URL("__offline_meta__", self.registration.scope).href;
-const VERSION = "20260915-offline1";
+const VERSION = "20260915-offline2";
 const ROOT = new URL("./", self.registration.scope);
+const CONCURRENCY = 5;
 
 const SEEDS = [
   "",
@@ -66,6 +68,15 @@ function canonical(urlLike) {
   return url;
 }
 
+function isHighResAsset(urlLike) {
+  try {
+    const url = canonical(urlLike);
+    return /\/assets\/shopping\/.*\/large\//i.test(url.pathname);
+  } catch (_) {
+    return false;
+  }
+}
+
 async function readMeta(cache) {
   const response = await cache.match(META_URL);
   if (!response) return null;
@@ -78,29 +89,44 @@ async function writeMeta(cache, meta) {
   }));
 }
 
+async function readyCacheInfo() {
+  const names = [OFFLINE_CACHE].concat(LEGACY_CACHES);
+  for (const name of names) {
+    if (!(await caches.has(name))) continue;
+    const cache = await caches.open(name);
+    const meta = await readMeta(cache);
+    if (meta && meta.ready) return { name, cache, meta };
+  }
+  return null;
+}
+
 async function getStatus() {
-  const cache = await caches.open(OFFLINE_CACHE);
-  const meta = await readMeta(cache);
+  const info = await readyCacheInfo();
+  const meta = info && info.meta;
   return {
     ready: Boolean(meta && meta.ready),
     version: meta && meta.version || null,
     downloadedAt: meta && meta.downloadedAt || null,
     count: meta && meta.count || 0,
-    failed: meta && meta.failed || 0
+    failed: meta && meta.failed || 0,
+    bytes: meta && meta.bytes || 0,
+    highRes: Boolean(meta && meta.highRes),
+    outdated: Boolean(meta && meta.version !== VERSION)
   };
 }
 
-function addCandidate(target, raw, base) {
+function addCandidate(target, raw, base, includeHighRes) {
   if (!raw || /^(?:data:|blob:|mailto:|tel:|javascript:|#)/i.test(raw)) return;
   try {
     const url = canonical(new URL(raw, base));
     if (!sameScope(url)) return;
+    if (!includeHighRes && isHighResAsset(url)) return;
     if (!ASSET_EXT_RE.test(url.pathname + url.search) && !url.pathname.endsWith("/")) return;
     target.add(url.href);
   } catch (_) {}
 }
 
-function discoverUrls(text, responseUrl) {
+function discoverUrls(text, responseUrl, includeHighRes) {
   const found = new Set();
   const base = canonical(responseUrl);
   const raws = new Set();
@@ -117,9 +143,9 @@ function discoverUrls(text, responseUrl) {
 
   const isJavaScript = /\.js$/i.test(base.pathname);
   raws.forEach(raw => {
-    addCandidate(found, raw, base);
+    addCandidate(found, raw, base, includeHighRes);
     if (isJavaScript && !/^(?:https?:)?\/\//i.test(raw) && !raw.startsWith("/")) {
-      DOCUMENT_BASES.forEach(docBase => addCandidate(found, raw, docBase));
+      DOCUMENT_BASES.forEach(docBase => addCandidate(found, raw, docBase, includeHighRes));
     }
   });
 
@@ -129,8 +155,8 @@ function discoverUrls(text, responseUrl) {
     while ((match = filenameRe.exec(text))) {
       const filename = match[1];
       if (filename.includes("/") || filename.includes("?")) continue;
-      addCandidate(found, "assets/shopping/finland/thumbs/" + filename, ROOT);
-      addCandidate(found, "assets/shopping/finland/large/" + filename, ROOT);
+      addCandidate(found, "assets/shopping/finland/thumbs/" + filename, ROOT, includeHighRes);
+      if (includeHighRes) addCandidate(found, "assets/shopping/finland/large/" + filename, ROOT, true);
     }
   }
 
@@ -142,6 +168,17 @@ async function broadcast(message) {
   clients.forEach(client => client.postMessage(message));
 }
 
+async function responseBytes(response) {
+  const header = Number(response.headers.get("content-length") || 0);
+  if (Number.isFinite(header) && header > 0) return header;
+  try {
+    const blob = await response.clone().blob();
+    return blob.size || 0;
+  } catch (_) {
+    return 0;
+  }
+}
+
 async function fetchAndCache(cache, href) {
   const request = new Request(href, { credentials: "same-origin", cache: "reload" });
   const response = await fetch(request);
@@ -150,13 +187,14 @@ async function fetchAndCache(cache, href) {
     error.httpStatus = response.status;
     throw error;
   }
+  const bytes = await responseBytes(response);
   try {
     await cache.put(request, response.clone());
   } catch (error) {
     error.cacheWriteFailed = true;
     throw error;
   }
-  return response;
+  return { response, bytes };
 }
 
 async function verifyCritical(cache) {
@@ -168,7 +206,15 @@ async function verifyCritical(cache) {
   }
 }
 
-async function downloadOfflinePack() {
+async function pruneHighRes(cache) {
+  const keys = await cache.keys();
+  await Promise.all(keys.map(request => {
+    return isHighResAsset(request.url) ? cache.delete(request) : Promise.resolve(false);
+  }));
+}
+
+async function downloadOfflinePack(options) {
+  const includeHighRes = Boolean(options && options.includeHighRes);
   const cache = await caches.open(OFFLINE_CACHE);
 
   // Keep the last successful ready marker while refreshing. If a refresh fails,
@@ -178,66 +224,113 @@ async function downloadOfflinePack() {
   const queued = new Set(queue);
   const visited = new Set();
   let completed = 0;
+  let processed = 0;
   let failed = 0;
+  let bytes = 0;
 
-  await broadcast({ type: "OFFLINE_PROGRESS", phase: "start", completed: 0, total: queue.length });
+  await broadcast({
+    type: "OFFLINE_PROGRESS",
+    phase: "start",
+    processed: 0,
+    completed: 0,
+    total: queued.size,
+    bytes: 0,
+    includeHighRes
+  });
 
   while (queue.length) {
-    const href = queue.shift();
-    if (visited.has(href)) continue;
-    visited.add(href);
+    const batch = [];
+    while (queue.length && batch.length < CONCURRENCY) {
+      const href = queue.shift();
+      if (visited.has(href)) continue;
+      visited.add(href);
+      batch.push(href);
+    }
+    if (!batch.length) continue;
 
-    try {
-      const response = await fetchAndCache(cache, href);
-      completed += 1;
-      const contentType = response.headers.get("content-type") || "";
-      const pathname = new URL(href).pathname;
-      if (/\.(?:html?|js|css|json|webmanifest)$/i.test(pathname) || TEXT_TYPE_RE.test(contentType)) {
-        let text = "";
-        try { text = await response.clone().text(); } catch (_) {}
-        if (text) {
-          discoverUrls(text, href).forEach(nextHref => {
-            if (!queued.has(nextHref) && !visited.has(nextHref)) {
-              queued.add(nextHref);
-              queue.push(nextHref);
-            }
-          });
+    let fatalError = null;
+
+    await Promise.all(batch.map(async href => {
+      try {
+        const result = await fetchAndCache(cache, href);
+        completed += 1;
+        bytes += result.bytes || 0;
+
+        const response = result.response;
+        const contentType = response.headers.get("content-type") || "";
+        const pathname = new URL(href).pathname;
+        if (/\.(?:html?|js|css|json|webmanifest)$/i.test(pathname) || TEXT_TYPE_RE.test(contentType)) {
+          let text = "";
+          try { text = await response.clone().text(); } catch (_) {}
+          if (text) {
+            discoverUrls(text, href, includeHighRes).forEach(nextHref => {
+              if (!queued.has(nextHref) && !visited.has(nextHref)) {
+                queued.add(nextHref);
+                queue.push(nextHref);
+              }
+            });
+          }
         }
+      } catch (error) {
+        // 404/HTTP misses can come from conservative URL discovery. A real
+        // network failure or Cache Storage write failure must stop the download.
+        if (error && (error.cacheWriteFailed || !error.httpStatus)) {
+          fatalError = fatalError || error;
+        } else if (seedSet.has(href)) {
+          failed += 1;
+        }
+      } finally {
+        processed += 1;
       }
-    } catch (error) {
-      // 404/HTTP misses can come from conservative URL discovery. A real
-      // network failure or Cache Storage write failure must stop the download.
-      if (error && (error.cacheWriteFailed || !error.httpStatus)) throw error;
-      if (seedSet.has(href)) failed += 1;
-    }
+    }));
 
-    if ((visited.size % 5 === 0) || queue.length === 0) {
-      await broadcast({
-        type: "OFFLINE_PROGRESS",
-        phase: "download",
-        completed,
-        failed,
-        total: visited.size + queue.length
-      });
-    }
+    await broadcast({
+      type: "OFFLINE_PROGRESS",
+      phase: "download",
+      processed,
+      completed,
+      failed,
+      total: queued.size,
+      bytes,
+      includeHighRes
+    });
+
+    if (fatalError) throw fatalError;
   }
 
   await verifyCritical(cache);
+  if (!includeHighRes) await pruneHighRes(cache);
+
   const meta = {
     ready: true,
     version: VERSION,
     downloadedAt: new Date().toISOString(),
     count: completed,
-    failed
+    failed,
+    bytes,
+    highRes: includeHighRes
   };
   await writeMeta(cache, meta);
+
+  // The v2 package replaces v1 only after v2 has been verified and marked ready.
+  await Promise.all(LEGACY_CACHES.map(name => caches.delete(name)));
+
   await broadcast({ type: "OFFLINE_PROGRESS", phase: "done", ...meta });
   return meta;
 }
 
 async function clearOfflinePack() {
-  await caches.delete(OFFLINE_CACHE);
-  return { ready: false, version: null, downloadedAt: null, count: 0, failed: 0 };
+  await Promise.all([OFFLINE_CACHE].concat(LEGACY_CACHES).map(name => caches.delete(name)));
+  return {
+    ready: false,
+    version: null,
+    downloadedAt: null,
+    count: 0,
+    failed: 0,
+    bytes: 0,
+    highRes: false,
+    outdated: false
+  };
 }
 
 self.addEventListener("message", event => {
@@ -252,7 +345,7 @@ self.addEventListener("message", event => {
   }
 
   if (data.type === "DOWNLOAD_OFFLINE") {
-    event.waitUntil(downloadOfflinePack()
+    event.waitUntil(downloadOfflinePack({ includeHighRes: Boolean(data.includeHighRes) })
       .then(status => reply({ ok: true, status }))
       .catch(error => reply({ ok: false, error: error.message })));
     return;
@@ -273,9 +366,9 @@ self.addEventListener("fetch", event => {
   if (!sameScope(url)) return;
 
   event.respondWith((async () => {
-    const cache = await caches.open(OFFLINE_CACHE);
-    const meta = await readMeta(cache);
-    if (!meta || !meta.ready) return fetch(request);
+    const info = await readyCacheInfo();
+    if (!info) return fetch(request);
+    const cache = info.cache;
 
     try {
       const response = await fetch(request);
