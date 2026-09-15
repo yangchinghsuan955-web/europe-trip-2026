@@ -74,9 +74,6 @@
     );
   }
 
-  // Offline controls load last and do not participate in the critical render path.
-  scripts.push(base + "offline-manager.js?v=20260915-offline2");
-
   scripts.forEach(function (scriptSrc, index) {
     var script = document.createElement("script");
     script.src = scriptSrc;
@@ -88,4 +85,22 @@
     }
     document.head.appendChild(script);
   });
+
+  function loadOfflineManager() {
+    if (window.TravelOfflineManagerRequested) return;
+    window.TravelOfflineManagerRequested = true;
+    var script = document.createElement("script");
+    script.src = base + "offline-manager.js?v=20260915-offline3";
+    script.async = true;
+    try { script.fetchPriority = "low"; } catch (_) {}
+    document.head.appendChild(script);
+  }
+
+  if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+    loadOfflineManager();
+  } else if (document.readyState === "complete") {
+    setTimeout(loadOfflineManager, 0);
+  } else {
+    window.addEventListener("load", loadOfflineManager, { once: true });
+  }
 })();
