@@ -9,7 +9,8 @@
     '../assets/finland-shopping-extra.js?v=20260910-shopping1',
     '../assets/finland-shopping-assets.js?v=20260913-cloudberry3',
     '../assets/vienna-shopping-assets.js?v=20260910-shopping1',
-    '../assets/modules/shopping/shopping-image-assets.js?v=20260914-shopthumb1'
+    '../assets/modules/shopping/shopping-image-assets.js?v=20260914-shopthumb1',
+    '../assets/offline-manager.js?v=20260915-offline1'
   ];
 
   if (document.readyState !== 'loading') {
