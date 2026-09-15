@@ -109,3 +109,14 @@
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", mountScrollRenderer, { once: true });
   else mountScrollRenderer();
 })(window);
+
+/* Load offline controls outside the critical Daily renderer. */
+(function () {
+  var source = document.currentScript;
+  if (!source || !source.src || window.TravelOfflineManagerRequested) return;
+  window.TravelOfflineManagerRequested = true;
+  var script = document.createElement("script");
+  script.src = new URL("../offline-manager.js?v=20260915-offline1", source.src).href;
+  script.async = true;
+  document.head.appendChild(script);
+})();
