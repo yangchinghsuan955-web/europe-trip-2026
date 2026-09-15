@@ -17,15 +17,22 @@
 
   window.TravelShoppingRecommendations = Object.freeze({ render });
 
-  // Offline controls load asynchronously so they never block shopping data/rendering.
-  if (!window.TravelOfflineManagerRequested) {
-    const source = document.currentScript;
-    if (source && source.src) {
-      window.TravelOfflineManagerRequested = true;
-      const script = document.createElement('script');
-      script.src = new URL('../../offline-manager.js?v=20260915-offline2', source.src).href;
-      script.async = true;
-      document.head.appendChild(script);
-    }
+  const source = document.currentScript;
+  function loadOfflineManager() {
+    if (!source || !source.src || window.TravelOfflineManagerRequested) return;
+    window.TravelOfflineManagerRequested = true;
+    const script = document.createElement('script');
+    script.src = new URL('../../offline-manager.js?v=20260915-offline3', source.src).href;
+    script.async = true;
+    try { script.fetchPriority = 'low'; } catch (_) {}
+    document.head.appendChild(script);
+  }
+
+  if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+    loadOfflineManager();
+  } else if (document.readyState === 'complete') {
+    setTimeout(loadOfflineManager, 0);
+  } else {
+    window.addEventListener('load', loadOfflineManager, { once: true });
   }
 })();
