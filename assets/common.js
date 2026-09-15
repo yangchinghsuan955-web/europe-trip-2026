@@ -74,6 +74,9 @@
     );
   }
 
+  // Offline controls load last and do not participate in the critical render path.
+  scripts.push(base + "offline-manager.js?v=20260915-offline1");
+
   scripts.forEach(function (scriptSrc, index) {
     var script = document.createElement("script");
     script.src = scriptSrc;
