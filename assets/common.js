@@ -34,6 +34,7 @@
       base + "modules/daily-day2-overrides.js",
       base + "modules/daily-day4-overrides.js",
       base + "modules/daily-day5-overrides.js",
+      base + "modules/daily-day6-overrides.js",
       base + "modules/daily-day9-overrides.js",
       base + "modules/daily-day10-overrides.js",
       base + "modules/daily-day11-overrides.js",
