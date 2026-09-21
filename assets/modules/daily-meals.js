@@ -2,7 +2,7 @@
 document.addEventListener('DOMContentLoaded',function(){
   var host=document.getElementById('food-meals');
   if(!host)return;
-  var overviewSrc='../assets/app-icons/18天餐食一覽.png?v=20260914-meal1';
+  var overviewSrc='../assets/app-icons/18天餐食一覽.webp?v=20260921-meal-final';
   var meals=[
     {d:1,date:'9/24（四）',place:'台北 → 維也納',b:['家中享用','尚未出發','outside'],l:['家中享用','尚未出發','outside'],n:['✈ 飛機餐 CI0063','桃園起飛後機上享用','flight']},
     {d:2,date:'9/25（五）',place:'維也納',b:['✈ 飛機餐 CI0063','抵達維也納前機上享用','flight'],l:['Figlmüller','Original Pork Schnitzel 炸豬排＋馬鈴薯／混合沙拉','booked'],n:['自理','視飽足程度，可略・＋ 超市採買 🛒','self'],more:['PARÉMI｜10:40 開心果可頌','Eis-Greissler｜11:00 冰淇淋','Demel｜15:00 皇帝煎餅','Bitzinger｜18:00 脆皮香腸','Ribs of Vienna｜候補豬肋排'],cost:[['已排定','NT$1,687','booked'],['晚餐自理','另計','self']]},
