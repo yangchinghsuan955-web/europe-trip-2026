@@ -1,10 +1,10 @@
 /* Aurora Trip offline package service worker. */
 "use strict";
 
-const OFFLINE_CACHE = "aurora-trip-offline-v3";
-const LEGACY_CACHES = ["aurora-trip-offline-v2", "aurora-trip-offline-v1"];
+const OFFLINE_CACHE = "aurora-trip-offline-v4";
+const LEGACY_CACHES = ["aurora-trip-offline-v3", "aurora-trip-offline-v2", "aurora-trip-offline-v1"];
 const META_URL = new URL("__offline_meta__", self.registration.scope).href;
-const VERSION = "20260915-offline3";
+const VERSION = "20260922-offline4";
 const ROOT = new URL("./", self.registration.scope);
 const CONCURRENCY = 5;
 
@@ -210,7 +210,7 @@ async function fetchAndCache(cache, href) {
 }
 
 async function verifyCritical(cache) {
-  const critical = ["daily/", "transport/", "stay/", "prep-tools/", "budget/", "assets/common.css", "assets/data/core.js"];
+  const critical = ["daily/", "transport/", "stay/", "prep-tools/", "budget/", "assets/common.css", "assets/data/core.js", "assets/app-icons/18天餐食一覽.png"];
   for (const path of critical) {
     const request = new Request(new URL(path, ROOT).href);
     const match = await cache.match(request, { ignoreSearch: true });
