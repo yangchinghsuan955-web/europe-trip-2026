@@ -210,7 +210,7 @@ async function fetchAndCache(cache, href) {
 }
 
 async function verifyCritical(cache) {
-  const critical = ["daily/", "transport/", "stay/", "prep-tools/", "budget/", "assets/common.css", "assets/data/core.js", "assets/app-icons/18天餐食一覽.png"];
+  const critical = ["daily/", "transport/", "stay/", "prep-tools/", "budget/", "assets/common.css", "assets/data/core.js", "assets/app-icons/三餐自理圖V2.png"];
   for (const path of critical) {
     const request = new Request(new URL(path, ROOT).href);
     const match = await cache.match(request, { ignoreSearch: true });
