@@ -7,9 +7,9 @@
   var current = document.currentScript;
   var scriptUrl = current && current.src ? new URL(current.src) : new URL("assets/offline-manager.js", document.baseURI);
   var rootUrl = new URL("../", scriptUrl);
-  var swUrl = new URL("service-worker.js?v=20260915-offline3", rootUrl);
-  var version = "20260915-offline3";
-  var cacheNames = ["aurora-trip-offline-v3", "aurora-trip-offline-v2", "aurora-trip-offline-v1"];
+  var swUrl = new URL("service-worker.js?v=20260922-offline4", rootUrl);
+  var version = "20260922-offline4";
+  var cacheNames = ["aurora-trip-offline-v4", "aurora-trip-offline-v3", "aurora-trip-offline-v2", "aurora-trip-offline-v1"];
   var metaUrl = new URL("__offline_meta__", rootUrl).href;
   var badge = document.getElementById("networkBadge");
   var state = {
