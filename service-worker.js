@@ -1,12 +1,14 @@
 /* Aurora Trip offline package service worker. */
 "use strict";
 
-const OFFLINE_CACHE = "aurora-trip-offline-v4";
-const LEGACY_CACHES = ["aurora-trip-offline-v3", "aurora-trip-offline-v2", "aurora-trip-offline-v1"];
+const OFFLINE_CACHE = "aurora-trip-offline-v5";
+const LEGACY_CACHES = ["aurora-trip-offline-v4", "aurora-trip-offline-v3", "aurora-trip-offline-v2", "aurora-trip-offline-v1"];
 const META_URL = new URL("__offline_meta__", self.registration.scope).href;
-const VERSION = "20260922-offline4";
+const VERSION = "20260924-offline5";
 const ROOT = new URL("./", self.registration.scope);
-const CONCURRENCY = 5;
+const CONCURRENCY = 2;
+const RETRY_ATTEMPTS = 3;
+const RETRY_DELAYS_MS = [0, 250, 750];
 
 const SEEDS = [
   "",
@@ -36,6 +38,16 @@ const SEEDS = [
 const ASSET_EXT_RE = /\.(?:html?|js|css|json|webmanifest|png|jpe?g|webp|avif|svg)(?:[?#].*)?$/i;
 const TEXT_TYPE_RE = /(?:text\/|javascript|json|xml|css|manifest)/i;
 const SHOPPING_RASTER_RE = /\.(?:png|jpe?g|webp|avif)$/i;
+const CRITICAL_PATHS = [
+  "daily/",
+  "transport/",
+  "stay/",
+  "prep-tools/",
+  "budget/",
+  "assets/common.css",
+  "assets/data/core.js",
+  "assets/app-icons/三餐自理圖V2.png"
+];
 
 self.addEventListener("install", event => {
   event.waitUntil(self.skipWaiting());
@@ -209,12 +221,65 @@ async function fetchAndCache(cache, href) {
   return { response, bytes };
 }
 
+function wait(milliseconds) {
+  return new Promise(resolve => setTimeout(resolve, milliseconds));
+}
+
+function resourceLabel(href) {
+  try {
+    const url = canonical(href);
+    const relative = url.pathname.slice(ROOT.pathname.length) + url.search;
+    return decodeURIComponent(relative) || "首頁";
+  } catch (_) {
+    return href;
+  }
+}
+
+function resourceError(error, href, attempts) {
+  const detail = error && error.message ? error.message : String(error || "未知錯誤");
+  const wrapped = new Error("下載失敗（" + resourceLabel(href) + "，已嘗試 " + attempts + " 次）：" + detail);
+  if (error && error.httpStatus) wrapped.httpStatus = error.httpStatus;
+  if (error && error.cacheWriteFailed) wrapped.cacheWriteFailed = true;
+  wrapped.resourceUrl = href;
+  return wrapped;
+}
+
+function shouldRetry(error) {
+  if (!error || !error.httpStatus) return true;
+  return error.httpStatus === 408 || error.httpStatus === 429 || error.httpStatus >= 500;
+}
+
+async function fetchAndCacheWithRetry(cache, href) {
+  let lastError;
+  let attempts = 0;
+  for (let attempt = 1; attempt <= RETRY_ATTEMPTS; attempt += 1) {
+    attempts = attempt;
+    try {
+      return await fetchAndCache(cache, href);
+    } catch (error) {
+      lastError = error;
+      if (attempt >= RETRY_ATTEMPTS || !shouldRetry(error)) break;
+      await wait(RETRY_DELAYS_MS[attempt] || 0);
+    }
+  }
+  throw resourceError(lastError, href, attempts);
+}
+
+async function removeIncompleteCaches() {
+  const names = [OFFLINE_CACHE].concat(LEGACY_CACHES);
+  await Promise.all(names.map(async name => {
+    if (!(await caches.has(name))) return false;
+    const cache = await caches.open(name);
+    const meta = await readMeta(cache);
+    return meta && meta.ready ? false : caches.delete(name);
+  }));
+}
+
 async function verifyCritical(cache) {
-  const critical = ["daily/", "transport/", "stay/", "prep-tools/", "budget/", "assets/common.css", "assets/data/core.js", "assets/app-icons/三餐自理圖V2.png"];
-  for (const path of critical) {
+  for (const path of CRITICAL_PATHS) {
     const request = new Request(new URL(path, ROOT).href);
     const match = await cache.match(request, { ignoreSearch: true });
-    if (!match) throw new Error("Missing critical offline asset: " + path);
+    if (!match) throw new Error("必要離線資源缺漏：" + path);
   }
 }
 
@@ -227,9 +292,10 @@ async function pruneHighRes(cache) {
 
 async function downloadOfflinePack(options) {
   const includeHighRes = Boolean(options && options.includeHighRes);
+  await removeIncompleteCaches();
   const cache = await caches.open(OFFLINE_CACHE);
   const queue = SEEDS.map(path => new URL(path, ROOT).href);
-  const seedSet = new Set(queue);
+  const requiredSet = new Set(queue.concat(CRITICAL_PATHS.map(path => new URL(path, ROOT).href)));
   const queued = new Set(queue);
   const visited = new Set();
   let completed = 0;
@@ -252,7 +318,7 @@ async function downloadOfflinePack(options) {
     let fatalError = null;
     await Promise.all(batch.map(async href => {
       try {
-        const result = await fetchAndCache(cache, href);
+        const result = await fetchAndCacheWithRetry(cache, href);
         completed += 1;
         bytes += result.bytes || 0;
         const response = result.response;
@@ -271,8 +337,9 @@ async function downloadOfflinePack(options) {
           }
         }
       } catch (error) {
-        if (error && (error.cacheWriteFailed || !error.httpStatus)) fatalError = fatalError || error;
-        else if (seedSet.has(href)) failed += 1;
+        const optionalDiscoveryMiss = !requiredSet.has(href) && error && error.httpStatus === 404;
+        if (!optionalDiscoveryMiss) failed += 1;
+        if (requiredSet.has(href) || (error && error.cacheWriteFailed)) fatalError = fatalError || error;
       } finally {
         processed += 1;
       }

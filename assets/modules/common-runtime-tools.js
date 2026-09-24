@@ -37,7 +37,8 @@
       $("#checklist").innerHTML = PACKING_GROUPS.map(function (group, groupIndex) {
         return '<section class="check-group"><h3>' + escapeHtml(group.group) + '</h3>' + group.items.map(function (item, itemIndex) {
           var id = "pack-" + groupIndex + "-" + itemIndex;
-          return '<label class="check-item ' + (state.checks[id] ? "done" : "") + '"><input type="checkbox" data-check="' + id + '" ' + (state.checks[id] ? "checked" : "") + '><span class="fake-check">✓</span><span class="check-copy"><b>' + escapeHtml(item.item) + '</b><small>' + escapeHtml([item.owner, item.note].filter(Boolean).join(" · ")) + '</small></span><span class="status neutral">未裝</span></label>';
+          var isChecked = Boolean(state.checks[id]);
+          return '<label class="check-item ' + (isChecked ? "done" : "") + '"><input type="checkbox" data-check="' + id + '" ' + (isChecked ? "checked" : "") + '><span class="fake-check">✓</span><span class="check-copy"><b>' + escapeHtml(item.item) + '</b><small>' + escapeHtml([item.owner, item.note].filter(Boolean).join(" · ")) + '</small></span><span class="status ' + (isChecked ? "confirmed" : "neutral") + '">' + (isChecked ? "已裝" : "未裝") + '</span></label>';
         }).join("") + '</section>';
       }).join("");
       $$("[data-check]", $("#checklist")).forEach(function (input) {

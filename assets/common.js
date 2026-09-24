@@ -18,7 +18,7 @@
     base + "data/core.js",
     base + "data/print.js",
     base + "modules/common-utils.js",
-    base + "modules/common-runtime-tools.js?v=20260915-perf2",
+    base + "modules/common-runtime-tools.js?v=20260924-checkstatus1",
     base + "modules/common-runtime-view.js",
     base + "modules/common-runtime-init.js?v=20260915-perf2",
     base + "modules/common-runtime-info.js",
@@ -92,7 +92,7 @@
     if (window.TravelOfflineManagerRequested) return;
     window.TravelOfflineManagerRequested = true;
     var script = document.createElement("script");
-    script.src = base + "offline-manager.js?v=20260922-offline4";
+    script.src = base + "offline-manager.js?v=20260924-offline5";
     script.async = true;
     try { script.fetchPriority = "low"; } catch (_) {}
     document.head.appendChild(script);

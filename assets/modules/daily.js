@@ -119,7 +119,7 @@
     if (window.TravelOfflineManagerRequested) return;
     window.TravelOfflineManagerRequested = true;
     var script = document.createElement("script");
-    script.src = new URL("../offline-manager.js?v=20260915-offline3", source.src).href;
+    script.src = new URL("../offline-manager.js?v=20260924-offline5", source.src).href;
     script.async = true;
     try { script.fetchPriority = "low"; } catch (_) {}
     document.head.appendChild(script);
