@@ -7,9 +7,9 @@
   var current = document.currentScript;
   var scriptUrl = current && current.src ? new URL(current.src) : new URL("assets/offline-manager.js", document.baseURI);
   var rootUrl = new URL("../", scriptUrl);
-  var swUrl = new URL("service-worker.js?v=20260922-offline4", rootUrl);
-  var version = "20260922-offline4";
-  var cacheNames = ["aurora-trip-offline-v4", "aurora-trip-offline-v3", "aurora-trip-offline-v2", "aurora-trip-offline-v1"];
+  var swUrl = new URL("service-worker.js?v=20260924-offline5", rootUrl);
+  var version = "20260924-offline5";
+  var cacheNames = ["aurora-trip-offline-v5", "aurora-trip-offline-v4", "aurora-trip-offline-v3", "aurora-trip-offline-v2", "aurora-trip-offline-v1"];
   var metaUrl = new URL("__offline_meta__", rootUrl).href;
   var badge = document.getElementById("networkBadge");
   var state = {
@@ -170,7 +170,7 @@
       if (state.bytes) parts.push("離線包約 " + formatBytes(state.bytes));
       if (state.count) parts.push("已保存 " + state.count + " 個本站資源");
       if (state.highRes) parts.push("含商品高清圖片");
-      if (state.failed) parts.push("略過 " + state.failed + " 個必要種子資源");
+      if (state.failed) parts.push("略過 " + state.failed + " 個無法下載的非必要資源");
       if (state.outdated) parts.push("建議按「更新離線資料」");
       detailLine.textContent = parts.join(" · ") || "五個主頁籤已可使用離線備援。";
     } else {
