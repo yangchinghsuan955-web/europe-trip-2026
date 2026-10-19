@@ -291,7 +291,9 @@ test("HTML entry points cache-bust the updated loader scripts", () => {
     "prep-tools/tax.html",
     "prep-tools/apps/index.html"
   ].forEach(path => {
-    assert.match(source(path), /common\.js\?v=20260924-offline5/, path);
+    assert.match(source(path), path === "transport/index.html"
+      ? /common\.js\?v=20261019-links1/
+      : /common\.js\?v=20260924-offline5/, path);
   });
 });
 

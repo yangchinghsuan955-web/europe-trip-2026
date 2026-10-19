@@ -16,6 +16,7 @@
       event.title = "Ivalo市區尋覓點心或短逛 (Hannan pizza)";
       event.place = "Ivalontie 12, 99800 Inari, 芬蘭";
       event.map = "https://www.google.com/maps/search/?api=1&query=Ivalontie%2012%2C%2099800%20Inari%2C%20Finland";
+      event.navigationMap = event.map;
       event.navigable = true;
     }
   });

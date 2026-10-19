@@ -4,7 +4,7 @@
 const OFFLINE_CACHE = "aurora-trip-offline-v5";
 const LEGACY_CACHES = ["aurora-trip-offline-v4", "aurora-trip-offline-v3", "aurora-trip-offline-v2", "aurora-trip-offline-v1"];
 const META_URL = new URL("__offline_meta__", self.registration.scope).href;
-const VERSION = "20260924-offline5";
+const VERSION = "20261019-links1";
 const ROOT = new URL("./", self.registration.scope);
 const CONCURRENCY = 2;
 const RETRY_ATTEMPTS = 3;

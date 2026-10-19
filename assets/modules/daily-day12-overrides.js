@@ -30,6 +30,7 @@
       event.cost = 0;
       event.place = "Nordøstpassasjen 47, 9008, 9006 Tromsø, 挪威";
       event.map = "https://www.google.com/maps/search/?api=1&query=Nord%C3%B8stpassasjen%2047%2C%209008%2C%209006%20Troms%C3%B8%2C%20Norway";
+      event.navigationMap = event.map;
       event.navigable = true;
     }
 
@@ -38,6 +39,7 @@
       event.costDisplay = "Around NOK 100~200";
       event.place = "Gjøastredet 1, 9008 Tromsø, 挪威";
       event.map = "https://www.google.com/maps/search/?api=1&query=Gj%C3%B8astredet%201%2C%209008%20Troms%C3%B8%2C%20Norway";
+      event.navigationMap = event.map;
       event.navigable = true;
     }
 
@@ -47,6 +49,7 @@
       event.cost = 0;
       event.place = "Nordøstpassasjen 33, 9008 Tromsø, 挪威";
       event.map = "https://www.google.com/maps/search/?api=1&query=Nord%C3%B8stpassasjen%2033%2C%209008%20Troms%C3%B8%2C%20Norway";
+      event.navigationMap = event.map;
       event.navigable = true;
     }
 
